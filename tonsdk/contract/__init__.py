@@ -42,6 +42,23 @@ class Contract(ABC):
     def create_data_cell(self):
         return Cell()
 
+    def create_init_external_message(self):
+        create_state_init = self.create_state_init()
+        state_init = create_state_init["state_init"]
+        address = create_state_init["address"]
+        code = create_state_init["code"]
+        data = create_state_init["data"]
+        header = Contract.create_external_message_header(address)
+        external_message = Contract.create_common_msg_info(header, state_init)
+        return {
+            "address": address,
+            "message": external_message,
+
+            "state_init": state_init,
+            "code": code,
+            "data": data,
+        }
+
     @classmethod
     def create_external_message_header(cls, dest, src=None, import_fee=0):
         message = Cell()
@@ -89,7 +106,7 @@ class Contract(ABC):
                 common_msg_info.write_cell(state_init)
             else:
                 common_msg_info.bits.write_bit(1)
-                common_msg_info.write_cell(state_init)
+                common_msg_info.refs.append(state_init)
         else:
             common_msg_info.bits.write_bit(0)
 
@@ -99,7 +116,7 @@ class Contract(ABC):
                 common_msg_info.write_cell(body)
             else:
                 common_msg_info.bits.write_bit(1)
-                common_msg_info.write_cell(body)
+                common_msg_info.refs.append(body)
         else:
             common_msg_info.bits.write_bit(0)
 

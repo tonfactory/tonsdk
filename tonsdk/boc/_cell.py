@@ -16,27 +16,24 @@ class Cell:
         self.refs = []
         self.is_exotic = False
 
-    def __str__(self) -> str:
-        return "BITS: {}\nREFS: {}\nIS_EXOTIC: {}".format(self.bits, self.refs, self.is_exotic)
+    def __repr__(self):
+        return "<Cell refs_num: %d, %s>" % (len(self.refs), repr(self.bits))
 
     def bytes_hash(self):
-        return bytes.fromhex(sha256(self.bytes_repr()).hexdigest())
+        return sha256(self.bytes_repr()).digest()
 
     def bytes_repr(self):
-        repr_array = []
-
+        repr_array = list()
         repr_array.append(self.get_data_with_descriptors())
-
         for r in self.refs:
-            repr_array.append(r.get_max_depth_as_array())
-
+            q = r.get_max_depth_as_array()
+            repr_array.append(q)
         for r in self.refs:
-            repr_array.append(r.bytes_hash())
-
+            q = r.bytes_hash()
+            repr_array.append(q)
         x = bytes()
         for r in repr_array:
             x = concat_bytes(x, r)
-
         return x
 
     def write_cell(self, another_cell):
@@ -62,7 +59,8 @@ class Cell:
         return d1
 
     def get_max_level(self):
-        # FIXME: looks strange! nothing happens here. Compare with get_max_depth.
+        if self.is_exotic:
+            raise NotImplementedError("Calculating max level for exotic cells is not implemented")
         max_level = 0
         for r in self.refs:
             r_max_level = r.get_max_level()
@@ -72,10 +70,7 @@ class Cell:
 
     def get_max_depth_as_array(self):
         max_depth = self.get_max_depth()
-        d = bytearray([0, 0])
-        d[1] = max_depth % 256
-        d[0] = math.floor(max_depth / 256)
-        return d
+        return bytearray([max_depth // 256, max_depth % 256])
 
     def get_max_depth(self):
         max_depth = 0
@@ -98,7 +93,7 @@ class Cell:
 
         repr_arr.append(self.get_data_with_descriptors())
         if self.is_explicitly_stored_hashes():
-            raise Exception("Cell hashes explicit storing is not implemented")
+            raise NotImplementedError("Cell hashes explicit storing is not implemented")
 
         for ref in self.refs:
             ref_hash = ref.bytes_hash()
@@ -130,11 +125,10 @@ class Cell:
         s = len("{0:b}".format(cells_num))
         s_bytes = min(math.ceil(s / 8), 1)
         full_size = 0
-        size_index = []
-        for cell_info in topological_order:
-            size_index.append(full_size)
-            full_size += cell_info[1].boc_serialization_size(
-                cells_index, s_bytes)
+        cell_sizes = {}
+        for (_hash, subcell) in topological_order:
+            cell_sizes[_hash] = subcell.boc_serialization_size(cells_index, s_bytes)
+            full_size += cell_sizes[_hash]
 
         offset_bits = len("{0:b}".format(full_size))
         offset_bytes = max(math.ceil(offset_bits / 8), 1)
@@ -155,8 +149,8 @@ class Cell:
         serialization.write_uint(0, s_bytes * 8)  # Root shoulh have index 0
 
         if has_idx:
-            for [cell_data, index] in topological_order:  # ?
-                serialization.write_uint(size_index[index], offset_bytes * 8)
+            for (_hash, subcell) in topological_order:
+                serialization.write_uint(cell_sizes[_hash], offset_bytes * 8)
 
         for cell_info in topological_order:
             ref_cell_ser = cell_info[1].serialize_for_boc(cells_index, s_bytes)

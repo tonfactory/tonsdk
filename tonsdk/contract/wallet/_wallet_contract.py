@@ -42,8 +42,9 @@ class WalletContract(Contract):
         payload_cell = Cell()
         if payload:
             if type(payload) == str:
-                payload_cell.bits.write_uint(0, 32)
-                payload_cell.bits.write_string(payload)
+                if len(payload) > 0:
+                    payload_cell.bits.write_uint(0, 32)
+                    payload_cell.bits.write_string(payload)
             elif hasattr(payload, 'refs'):
                 payload_cell = payload
             else:

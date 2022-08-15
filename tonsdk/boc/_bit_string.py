@@ -8,8 +8,8 @@ class BitString:
         self.cursor = 0
         self.length = length
 
-    def __str__(self) -> str:
-        return "ARRAY: {}\nCURSOR: {}\nLENGTH: {}".format(self.array, self.cursor, self.length)
+    def __repr__(self):
+        return str(self.get_top_upped_array())
 
     def __iter__(self):
         for i in range(self.cursor):
@@ -110,11 +110,13 @@ class BitString:
             raise Exception(
                 f"bitLength is too small for number, got number={number},bitLength={bit_length}")
 
-        s = bytes(
-            ("{0:0" + str(bit_length) + "b}").format(number).encode('utf-8'))
-
-        for b in s.decode('utf-8'):  # FIXME: What is the best way?
-            self.write_bit(b)
+        for i in range(bit_length, 0, -1):
+            k = (2 ** (i - 1))
+            if number // k == 1:
+                self.write_bit(1)
+                number -= k
+            else:
+                self.write_bit(0)
 
     def write_uint8(self, ui8):
         self.write_uint(ui8, 8)
@@ -132,8 +134,9 @@ class BitString:
             raise Exception("Bitlength is too small for number")
         else:
             if number < 0:
-                # FIXME: IMPLEMENT
-                raise Exception("Implement me pls")
+                self.write_bit(1)
+                s = 2 ** (bit_length - 1)
+                self.write_uint(s - number, bit_length - 1)
             else:
                 self.write_bit(0)
                 self.write_uint(number, bit_length - 1)
@@ -154,7 +157,7 @@ class BitString:
             self.write_uint(0, 2)
         else:
             self.write_uint(2, 2)
-            self.write_uint(0, 1)
+            self.write_uint(0, 1)  # anycast
             self.write_int(address.wc, 8)
             self.write_bytes(address.hash_part)
 
