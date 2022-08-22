@@ -1,5 +1,3 @@
-
-
 from ... import Contract
 from ....boc import Cell
 
