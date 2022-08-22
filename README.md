@@ -6,6 +6,12 @@ Analogue of the [tonweb js](https://github.com/toncenter/tonweb) library. Feel f
 
 - tonsdk/provider part is dirty.
 
+# Installation
+
+```code
+$ pip install tonsdk
+```
+
 # Usage examples
 
 ### Create mnemonic, init wallet class, create external message to deploy the wallet
