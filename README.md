@@ -41,6 +41,8 @@ Base64boc to deploy the wallet: {}
 
 ### Clients usage example (dirty)
 
+*Note - to use these clients you should install tvm_valuetypes and aiohttp packages*
+
 ```python
 from abc import ABC, abstractmethod
 import asyncio
@@ -87,7 +89,7 @@ class TonCenterTonClient(AbstractTonClient):
     def __init__(self):
         self.loop = asyncio.get_event_loop()
         self.provider = ToncenterClient(base_url="https://testnet.toncenter.com/api/v2/",
-                                        api_key="123-43-123-534")
+                                        api_key="eb542b65e88d2da318fb7c163b9245e4edccb2eb8ba11cabda092cdb6fbc3395")
 
     def _run(self, to_run, *, single_query=True):
         try:
@@ -112,12 +114,13 @@ class TonCenterTonClient(AbstractTonClient):
             return await asyncio.gather(*tasks)
 
 
-class TonCenterTonClient(AbstractTonClient):
+class TonLibJsonTonClient(AbstractTonClient):
     def __init__(self):
         self.loop = asyncio.get_event_loop()
         self.provider = SyncTonlibClient(config="./.tonlibjson/testnet.json",
                                          keystore="./.tonlibjson/keystore",
                                          cdll_path="./.tonlibjson/linux_libtonlibjson.so")  # or macos_libtonlibjson.dylib
+        self.provider.init()
 
     def _run(self, to_read, *, single_query=True):
         try:
@@ -125,11 +128,16 @@ class TonCenterTonClient(AbstractTonClient):
                 queries_order = {query_id: i for i,
                                  query_id in enumerate(to_read)}
                 return self.provider.read_results(queries_order)
-            
+
             else:
                 return self.provider.read_result(to_read)
-        
+
         except Exception:  # TonLibWrongResult, TimeoutError
             raise
+
+
+addr_info = TonCenterTonClient().get_address_information(
+    "EQAhE3sLxHZpsyZ_HecMuwzvXHKLjYx4kEUehhOy2JmCcHCT")
+print(addr_info)
 
 ```
