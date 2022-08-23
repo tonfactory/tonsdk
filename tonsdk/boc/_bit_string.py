@@ -136,7 +136,7 @@ class BitString:
             if number < 0:
                 self.write_bit(1)
                 s = 2 ** (bit_length - 1)
-                self.write_uint(s - number, bit_length - 1)
+                self.write_uint(s + number, bit_length - 1)
             else:
                 self.write_bit(0)
                 self.write_uint(number, bit_length - 1)
