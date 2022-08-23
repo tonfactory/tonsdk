@@ -84,7 +84,7 @@ class Address:
                 raise InvalidAddressError(f"Invalid address {any_form}")
 
             wc = int(arr[0])
-            if wc != 0 and wc != 1:
+            if wc != 0 and wc != -1:
                 raise InvalidAddressError(f"Invalid address wc {wc}")
 
             address_hex = arr[1]
