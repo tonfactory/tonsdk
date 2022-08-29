@@ -42,3 +42,46 @@ class NFTCollection(Contract):
         cell.refs.append(Cell.one_from_boc(self.options['nft_item_code_hex']))
         cell.refs.append(self.create_royalty_cell(self.options))
         return cell
+
+    def create_mint_body(self, params):
+        body = Cell()
+        body.bits.write_uint(1, 32)
+        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
+        body.bits.write_uint(params['item_index'], 64)
+        body.bits.write_grams(params.get('amount', 50000000))
+        content_cell = Cell()
+        content_cell.bits.write_address(params['new_owner_address'])
+        uri_content = Cell()
+        uri_content.bits.write_bytes(serialize_uri(params['item_content_uri']))
+        content_cell.refs.append(uri_content)
+        body.refs.append(content_cell)
+        return body
+
+    def create_get_royalty_params_body(self, params):
+        body = Cell()
+        body.bits.write_uint(0x693d3950, 32)  # OP
+        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
+        return body
+
+    def create_change_owner_body(self, params):
+        if 'new_owner_address' not in params:
+            raise Exception('new_owner_address is required for change_owner')
+
+        body = Cell()
+        body.bits.write_uint(3, 32)  # OP
+        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
+        body.bits.write_address(params['new_owner_address'])
+        return body
+
+    def create_edit_content_body(self, params):
+        if params['royalty'] > 1:
+            raise Exception('royalty must be less than 1')
+
+        body = Cell()
+        body.bits.write_uint(4, 32)  # OP
+        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
+        body.refs.append(self.create_content_cell(params))
+        body.refs.append(self.create_royalty_cell(params))
+        return body
+
+
