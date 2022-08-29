@@ -1,6 +1,6 @@
 # https://github.com/vergl4s/ethereum-mnemonic-utils/blob/master/mnemonic_utils.py
-import os
 import math
+import os
 from hashlib import pbkdf2_hmac
 
 from ._settings import PBKDF_ITERATIONS

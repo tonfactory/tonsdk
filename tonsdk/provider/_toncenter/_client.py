@@ -1,5 +1,5 @@
-import json
 import codecs
+import json
 from typing import Dict, Optional
 
 

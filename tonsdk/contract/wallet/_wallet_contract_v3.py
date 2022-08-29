@@ -1,7 +1,7 @@
 import time
 
-from ...boc import Cell
 from ._wallet_contract import WalletContract
+from ...boc import Cell
 
 
 class WalletV3ContractBase(WalletContract):

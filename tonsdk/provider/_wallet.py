@@ -1,6 +1,6 @@
 import codecs
-
 from hashlib import sha256 as hasher
+
 from tvm_valuetypes.cell import deserialize_boc
 
 

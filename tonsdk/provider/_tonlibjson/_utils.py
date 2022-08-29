@@ -1,13 +1,13 @@
-import json
-from pathlib import Path
-import platform
-import os
-import functools
-import base64
 import asyncio
-import struct
+import base64
 import codecs
+import functools
+import json
+import os
+import platform
+import struct
 from functools import wraps
+from pathlib import Path
 
 
 class TonLibWrongResult(Exception):

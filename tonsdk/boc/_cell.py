@@ -1,6 +1,6 @@
-from hashlib import sha256
-import math
 import copy
+import math
+from hashlib import sha256
 
 from ._bit_string import BitString
 from ..utils import concat_bytes, tree_walk, crc32c, read_n_bytes_uint_from_array, compare_bytes

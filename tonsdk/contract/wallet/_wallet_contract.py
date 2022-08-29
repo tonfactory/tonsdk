@@ -1,9 +1,9 @@
 import decimal
 from enum import Enum
 
+from .. import Contract
 from ...boc import Cell
 from ...utils import Address, sign_message
-from .. import Contract
 
 
 class SendModeEnum(int, Enum):
