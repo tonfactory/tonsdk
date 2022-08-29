@@ -27,7 +27,7 @@ class JettonWallet(Contract):
         cell.bits.write_uint(query_id, 64)
         cell.bits.write_grams(jetton_amount)
         cell.bits.write_address(to_address)
-        cell.bits.write_address(response_address)
+        cell.bits.write_address(response_address or to_address)
         cell.bits.write_bit(0)  # null custom_payload
         cell.bits.write_grams(forward_amount)
         cell.bits.write_bit(0)  # forward_payload in this slice, not separate cell
