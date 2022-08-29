@@ -45,7 +45,7 @@ Base64boc to deploy the wallet: {}
            base64_boc))
 ```
 
-### Transfer NFT & Jettons by create transfer message from owner wallet
+### Transfer NFT & Jettons by creating a transfer message from an owner wallet
 ```python
 from tonsdk.contract.token.nft import NFTItem
 from tonsdk.contract.token.ft import JettonWallet
