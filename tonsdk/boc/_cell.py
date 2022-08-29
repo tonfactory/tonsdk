@@ -123,7 +123,7 @@ class Cell:
         cells_num = len(topological_order)
         # Minimal number of bits to represent reference (unused?)
         s = len("{0:b}".format(cells_num))
-        s_bytes = min(math.ceil(s / 8), 1)
+        s_bytes = max(math.ceil(s / 8), 1)
         full_size = 0
         cell_sizes = {}
         for (_hash, subcell) in topological_order:
