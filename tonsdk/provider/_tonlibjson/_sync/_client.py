@@ -1,9 +1,9 @@
-import random
-import json
-import time
 import codecs
+import json
+import random
+import time
+
 from tvm_valuetypes import render_tvm_stack
-import random 
 
 from ._wrapper import SyncTonLibWrapper
 from .._utils import CtypesStdoutCapture, TonLibWrongResult

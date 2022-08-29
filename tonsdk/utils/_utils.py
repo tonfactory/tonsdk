@@ -1,10 +1,11 @@
 import codecs
+import ctypes
 import math
 import struct
-import ctypes
+
 import nacl
-from nacl.signing import SignedMessage
 from nacl.bindings import crypto_sign, crypto_sign_BYTES
+from nacl.signing import SignedMessage
 
 
 def concat_bytes(a, b):

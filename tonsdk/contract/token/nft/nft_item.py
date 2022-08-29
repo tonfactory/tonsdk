@@ -1,5 +1,6 @@
 from ... import Contract
 from ....boc import Cell
+from ....utils import Address
 
 
 class NFTItem(Contract):
@@ -10,7 +11,7 @@ class NFTItem(Contract):
         kwargs["code"] = Cell.one_from_boc(self.code)
         super().__init__(**kwargs)
 
-    def create_data_cell(self):
+    def create_data_cell(self) -> Cell:
         cell = Cell()
         cell.bits.write_uint(self.options.get('index', 0), 64)
         cell.bits.write_address(self.options.get('collection_address', None))
@@ -20,7 +21,28 @@ class NFTItem(Contract):
             cell.refs.append(self.options['content'])
         return cell
 
+    def create_transfer_body(
+            self, new_owner_address: Address, response_address: Address = None,
+            forward_amount: int = 0, forward_payload: bytes = None, query_id: int = 0
+    ) -> Cell:
+        cell = Cell()
+        cell.bits.write_uint(0x5fcc3d14, 32)  # transfer OP
+        cell.bits.write_uint(query_id, 64)
+        cell.bits.write_address(new_owner_address)
+        cell.bits.write_address(response_address or new_owner_address)
+        cell.bits.write_bit(False)  # null custom_payload
+        cell.bits.write_grams(forward_amount)
+        cell.bits.write_bit(False)  # forward_payload in this slice, not separate cell
+        if forward_payload:
+            cell.bits.write_bytes(forward_payload)
 
+        return cell
+
+    def create_get_static_data_body(self, query_id: int = 0) -> Cell:
+        cell = Cell()
+        cell.bits.write_uint(0x2fcb26a2, 32)
+        cell.bits.write_uint(query_id, 64)
+        return cell
 
 
 

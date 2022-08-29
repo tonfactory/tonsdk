@@ -1,6 +1,7 @@
 import base64
-from ...boc import Cell
+
 from .._exceptions import ResponseError
+from ...boc import Cell
 
 
 def parse_object(obj):

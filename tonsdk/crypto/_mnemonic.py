@@ -1,11 +1,12 @@
-from typing import List, Optional, Tuple
 import hashlib
 import hmac
+from typing import List, Optional, Tuple
+
 from nacl.bindings import crypto_sign_seed_keypair
 
-from .bip39 import english
-from ._utils import get_secure_random_number, is_basic_seed
 from ._settings import PBKDF_ITERATIONS
+from ._utils import get_secure_random_number, is_basic_seed
+from .bip39 import english
 
 
 def mnemonic_is_valid(mnemo_words: List[str]) -> bool:

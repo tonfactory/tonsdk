@@ -1,7 +1,8 @@
 import base64
 import ctypes
-from ._utils import crc16, string_to_bytes
+
 from ._exceptions import InvalidAddressError
+from ._utils import crc16, string_to_bytes
 
 
 def parse_friendly_address(addr_str):

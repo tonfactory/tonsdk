@@ -1,6 +1,6 @@
-from hashlib import sha256
-import math
 import copy
+import math
+from hashlib import sha256
 
 from ._bit_string import BitString
 from ..utils import concat_bytes, tree_walk, crc32c, read_n_bytes_uint_from_array, compare_bytes
@@ -123,7 +123,7 @@ class Cell:
         cells_num = len(topological_order)
         # Minimal number of bits to represent reference (unused?)
         s = len("{0:b}".format(cells_num))
-        s_bytes = min(math.ceil(s / 8), 1)
+        s_bytes = max(math.ceil(s / 8), 1)
         full_size = 0
         cell_sizes = {}
         for (_hash, subcell) in topological_order:
