@@ -21,7 +21,7 @@ class JettonWallet(Contract):
             forward_payload: bytes = None,
             response_address: Address = None,
             query_id: int = 0
-    ):
+    ) -> Cell:
         cell = Cell()
         cell.bits.write_uint(0xf8a7ea5, 32)  # request_transfer op
         cell.bits.write_uint(query_id, 64)
@@ -36,9 +36,10 @@ class JettonWallet(Contract):
 
         return cell
 
-    def create_burn_body(self, jetton_amount: int, response_address: Address = None, query_id: int = 0):
+    def create_burn_body(self, jetton_amount: int, response_address: Address = None, query_id: int = 0) -> Cell:
         cell = Cell()
         cell.bits.write_uint(0x595f07bc, 32)  # burn OP
         cell.bits.write_uint(query_id, 64)
         cell.bits.write_grams(jetton_amount)
         cell.bits.write_address(response_address)
+        return cell

@@ -12,7 +12,7 @@ class NFTSale(Contract):
         kwargs["code"] = Cell.one_from_boc(self.code)
         super().__init__(**kwargs)
 
-    def create_data_cell(self):
+    def create_data_cell(self) -> Cell:
         cell = Cell()
         cell.bits.write_address(self.options['marketplace_address'])
         cell.bits.write_address(self.options['nft_address'])
@@ -26,7 +26,7 @@ class NFTSale(Contract):
         cell.refs.append(fees_cell)
         return cell
 
-    def create_cancel_body(self, query_id: int = 0):
+    def create_cancel_body(self, query_id: int = 0) -> Cell:
         cell = Cell()
         cell.bits.write_uint(3, 32)  # cancel OP-code
         cell.bits.write_uint(query_id, 64)

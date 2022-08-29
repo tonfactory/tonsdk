@@ -14,7 +14,7 @@ class JettonMinter(Contract):
         kwargs['code'] = Cell.one_from_boc(self.code)
         super().__init__(**kwargs)
 
-    def create_data_cell(self):
+    def create_data_cell(self) -> Cell:
         cell = Cell()
         cell.bits.write_grams(0)  # total supply
         cell.bits.write_address(self.options['admin_address'])
@@ -22,7 +22,7 @@ class JettonMinter(Contract):
         cell.refs.append(Cell.one_from_boc(self.options['jetton_wallet_code_hex']))
         return cell
 
-    def create_mint_body(self, destination: Address, jetton_amount: int, amount: int = 50000000, query_id: int = 0):
+    def create_mint_body(self, destination: Address, jetton_amount: int, amount: int = 50000000, query_id: int = 0) -> Cell:
         body = Cell()
         body.bits.write_uint(21, 32)  # OP mint
         body.bits.write_uint(query_id, 64)
@@ -41,14 +41,14 @@ class JettonMinter(Contract):
         body.refs.append(transfer_body)
         return body
 
-    def create_change_admin_body(self, new_admin_address: Address, query_id: int = 0):
+    def create_change_admin_body(self, new_admin_address: Address, query_id: int = 0) -> Cell:
         body = Cell()
         body.bits.write_uint(3, 32)  # OP
         body.bits.write_uint(query_id, 64)  # query_id
         body.bits.write_address(new_admin_address)
         return body
 
-    def create_edit_content_body(self, jetton_content_uri: str, query_id: int = 0):
+    def create_edit_content_body(self, jetton_content_uri: str, query_id: int = 0) -> Cell:
         body = Cell()
         body.bits.write_uint(4, 32)  # OP
         body.bits.write_uint(query_id, 64)  # query_id

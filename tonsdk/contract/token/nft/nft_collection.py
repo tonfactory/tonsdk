@@ -17,7 +17,7 @@ class NFTCollection(Contract):
         self.options['royalty_factor'] = floor(self.options.get('royalty', 0) * self.options['royalty_base'])
 
 
-    def create_content_cell(self, params):
+    def create_content_cell(self, params) -> Cell:
         collection_content_cell = create_offchain_uri_cell(params['collection_content_uri'])
         common_content_cell = Cell()
         common_content_cell.bits.write_bytes(serialize_uri(params['nft_item_content_base_uri']))
@@ -27,7 +27,7 @@ class NFTCollection(Contract):
         return content_cell
 
 
-    def create_royalty_cell(self, params):
+    def create_royalty_cell(self, params) -> Cell:
         royalty_cell = Cell()
         royalty_cell.bits.write_uint(params['royalty_factor'], 16)
         royalty_cell.bits.write_uint(params['royalty_base'], 16)
@@ -35,7 +35,7 @@ class NFTCollection(Contract):
         return royalty_cell
 
 
-    def create_data_cell(self):
+    def create_data_cell(self) -> Cell:
         cell = Cell()
         cell.bits.write_address(self.options['owner_address'])
         cell.bits.write_uint(0, 64)  # next_item_index
@@ -47,7 +47,7 @@ class NFTCollection(Contract):
     def create_mint_body(
             self, item_index: int, new_owner_address: Address,
             item_content_uri: str, amount: int = 50000000, query_id: int = 0
-    ):
+    ) -> Cell:
         body = Cell()
         body.bits.write_uint(1, 32)
         body.bits.write_uint(query_id, 64)  # query_id
@@ -61,20 +61,20 @@ class NFTCollection(Contract):
         body.refs.append(content_cell)
         return body
 
-    def create_get_royalty_params_body(self, query_id: int = 0):
+    def create_get_royalty_params_body(self, query_id: int = 0) -> Cell:
         body = Cell()
         body.bits.write_uint(0x693d3950, 32)  # OP
         body.bits.write_uint(query_id, 64)  # query_id
         return body
 
-    def create_change_owner_body(self, new_owner_address: Address, query_id: int = 0):
+    def create_change_owner_body(self, new_owner_address: Address, query_id: int = 0) -> Cell:
         body = Cell()
         body.bits.write_uint(3, 32)  # OP
         body.bits.write_uint(query_id, 64)  # query_id
         body.bits.write_address(new_owner_address)
         return body
 
-    def create_edit_content_body(self, params):
+    def create_edit_content_body(self, params) -> Cell:
         if params['royalty'] > 1:
             raise Exception('royalty must be less than 1')
 

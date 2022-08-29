@@ -10,7 +10,7 @@ class NFTItem(Contract):
         kwargs["code"] = Cell.one_from_boc(self.code)
         super().__init__(**kwargs)
 
-    def create_data_cell(self):
+    def create_data_cell(self) -> Cell:
         cell = Cell()
         cell.bits.write_uint(self.options.get('index', 0), 64)
         cell.bits.write_address(self.options.get('collection_address', None))
