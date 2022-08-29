@@ -26,10 +26,10 @@ class NFTSale(Contract):
         cell.refs.append(fees_cell)
         return cell
 
-    def create_cancel_body(self, params={}):
+    def create_cancel_body(self, query_id: int = 0):
         cell = Cell()
         cell.bits.write_uint(3, 32)  # cancel OP-code
-        cell.bits.write_uint(params.get('query_id', 0), 64)
+        cell.bits.write_uint(query_id, 64)
         return cell
 
 

@@ -1,8 +1,9 @@
 from math import floor
 
+from .nft_utils import create_offchain_uri_cell, serialize_uri
 from ... import Contract
 from ....boc import Cell
-from .nft_utils import create_offchain_uri_cell, serialize_uri
+from ....utils import Address
 
 
 class NFTCollection(Contract):
@@ -43,34 +44,34 @@ class NFTCollection(Contract):
         cell.refs.append(self.create_royalty_cell(self.options))
         return cell
 
-    def create_mint_body(self, params):
+    def create_mint_body(
+            self, item_index: int, new_owner_address: Address,
+            item_content_uri: str, amount: int = 50000000, query_id: int = 0
+    ):
         body = Cell()
         body.bits.write_uint(1, 32)
-        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
-        body.bits.write_uint(params['item_index'], 64)
-        body.bits.write_grams(params.get('amount', 50000000))
+        body.bits.write_uint(query_id, 64)  # query_id
+        body.bits.write_uint(item_index, 64)
+        body.bits.write_grams(amount)
         content_cell = Cell()
-        content_cell.bits.write_address(params['new_owner_address'])
+        content_cell.bits.write_address(new_owner_address)
         uri_content = Cell()
-        uri_content.bits.write_bytes(serialize_uri(params['item_content_uri']))
+        uri_content.bits.write_bytes(serialize_uri(item_content_uri))
         content_cell.refs.append(uri_content)
         body.refs.append(content_cell)
         return body
 
-    def create_get_royalty_params_body(self, params):
+    def create_get_royalty_params_body(self, query_id: int = 0):
         body = Cell()
         body.bits.write_uint(0x693d3950, 32)  # OP
-        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
+        body.bits.write_uint(query_id, 64)  # query_id
         return body
 
-    def create_change_owner_body(self, params):
-        if 'new_owner_address' not in params:
-            raise Exception('new_owner_address is required for change_owner')
-
+    def create_change_owner_body(self, new_owner_address: Address, query_id: int = 0):
         body = Cell()
         body.bits.write_uint(3, 32)  # OP
-        body.bits.write_uint(params.get('query_id', 0), 64)  # query_id
-        body.bits.write_address(params['new_owner_address'])
+        body.bits.write_uint(query_id, 64)  # query_id
+        body.bits.write_address(new_owner_address)
         return body
 
     def create_edit_content_body(self, params):
