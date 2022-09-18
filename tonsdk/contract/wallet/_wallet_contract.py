@@ -10,8 +10,8 @@ class SendModeEnum(int, Enum):
     carry_all_remaining_balance = 128
     carry_all_remaining_incoming_value = 64
     destroy_account_if_zero = 32
-    pay_gas_separately = 2
-    ignore_errors = 1
+    ignore_errors = 2
+    pay_gas_separately = 1
 
     def __str__(self) -> str:
         return super().__str__()
