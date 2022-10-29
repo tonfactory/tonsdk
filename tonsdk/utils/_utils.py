@@ -18,7 +18,7 @@ def move_to_end(index_hashmap, topological_order_arr, target):
         if index_hashmap[_hash] > target_index:
             index_hashmap[_hash] -= 1
     index_hashmap[target] = len(topological_order_arr) - 1
-    data = topological_order_arr[target_index]
+    data = topological_order_arr.pop(target_index)
     topological_order_arr.append(data)
     for sub_cell in data[1].refs:
         topological_order_arr, index_hashmap = move_to_end(index_hashmap, topological_order_arr, sub_cell.bytes_hash())
