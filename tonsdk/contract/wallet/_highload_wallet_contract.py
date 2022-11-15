@@ -34,7 +34,7 @@ class HighloadWalletV2Contract(HighloadWalletContractBase):
         if query_id < int(time.time() + timeout) << 32:
             query_id = int(time.time() + timeout) << 32 + query_id
 
-        signing_message = self.create_signing_message(query_id, timeout=timeout)
+        signing_message = self.create_signing_message(query_id)
         recipients = begin_dict(16)
         for i, recipient in enumerate(recipients_list):
             payload_cell = Cell()
