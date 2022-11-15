@@ -1,11 +1,6 @@
 from .dict import serialize_dict
 from ._cell import Cell
 
-
-def begin_dict(key_size):
-    return DictBuilder(key_size)
-
-
 class DictBuilder:
     def __init__(self, key_size: int):
         self.key_size = key_size
@@ -20,6 +15,7 @@ class DictBuilder:
         assert type(index) == int, 'Invalid index type'
         assert not (index in self.items), f'Item {index} already exist'
         self.items[index] = value
+        return self
 
     def store_ref(self, index, value: Cell):
         assert self.ended is False, 'Already ended'
@@ -27,6 +23,7 @@ class DictBuilder:
         cell = Cell()
         cell.refs.append(value)
         self.store_cell(index, cell)
+        return self
 
     def end_dict(self) -> Cell:
         assert self.ended is False, 'Already ended'
@@ -43,3 +40,6 @@ class DictBuilder:
         assert self.ended is False, 'Already ended'
         assert self.items, 'Dict is empty'
         return self.end_dict()
+
+def begin_dict(key_size):
+    return DictBuilder(key_size)

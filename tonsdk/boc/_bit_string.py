@@ -169,3 +169,6 @@ class BitString:
             l = math.ceil(len(hex(amount)[2:]) / 2)  # ? [2:] removes 0x
             self.write_uint(l, 4)
             self.write_uint(amount, l * 8)
+
+    def write_coins(self, amount):
+        self.write_grams(amount)
