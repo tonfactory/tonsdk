@@ -19,6 +19,9 @@ class Cell:
     def __repr__(self):
         return "<Cell refs_num: %d, %s>" % (len(self.refs), repr(self.bits))
 
+    def __bool__(self):
+        return bool(self.bits.cursor) or bool(self.refs)
+
     def bytes_hash(self):
         return sha256(self.bytes_repr()).digest()
 
