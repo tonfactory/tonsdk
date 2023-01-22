@@ -10,10 +10,11 @@ from .._utils import CtypesStdoutCapture, TonLibWrongResult
 
 
 class SyncTonlibClient:
-    def __init__(self, config, keystore, cdll_path=None):
+    def __init__(self, config, keystore, cdll_path=None, verbosity=0):
         self.ton_config = config
         self.keystore = keystore
         self.cdll_path = cdll_path
+        self.verbosity = verbosity
 
     def init(self):
         wrapper = SyncTonLibWrapper(self.cdll_path)
@@ -25,7 +26,7 @@ class SyncTonlibClient:
         with CtypesStdoutCapture():
             change_verbosity_level_query = {
                 '@type': 'setLogVerbosityLevel',
-                'new_verbosity_level': 0
+                'new_verbosity_level': self.verbosity
             }
 
             keystore_obj = {
