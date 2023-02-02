@@ -1,9 +1,10 @@
 import copy
 import math
+from ..utils._address import Address
 
 
 class BitString:
-    def __init__(self, length):
+    def __init__(self, length: int):
         self.array = bytearray(math.ceil(length / 8))
         self.cursor = 0
         self.length = length
@@ -34,22 +35,26 @@ class BitString:
     def __len__(self):
         return self.length
 
-    def get(self, n):
+    def get(self, n: int):
+        """Just returns n bits from cursor. Does not move the cursor."""
         return int((self.array[(n // 8) | 0] & (1 << (7 - (n % 8)))) > 0)
 
     def off(self, n):
+        """Sets next from cursor n bits to 0. Does not move cursor."""
         self.check_range(n)
         self.array[(n // 8) | 0] &= ~(1 << (7 - (n % 8)))
 
     def on(self, n):
+        """Sets next from cursor n bits to 1. Does not move cursor."""
         self.check_range(n)
         self.array[(n // 8) | 0] |= 1 << (7 - (n % 8))
 
-    def check_range(self, n):
+    def check_range(self, n: int) -> None:
+        """Throws an exception if the cursor + n is out of range."""
         if n > self.length:
             raise Exception("BitString overflow")
 
-    def set_top_upped_array(self, array, fullfilled_bytes=True):
+    def set_top_upped_array(self, array: bytearray, fullfilled_bytes=True):
         self.length = len(array) * 8
         self.array = array
         self.cursor = self.length
@@ -71,7 +76,7 @@ class BitString:
                 raise Exception(
                     f"Incorrect TopUppedArray {array}, {fullfilled_bytes}")
 
-    def get_top_upped_array(self):
+    def get_top_upped_array(self) -> bytearray:
         ret = copy.deepcopy(self)
         tu = math.ceil(ret.cursor / 8) * 8 - ret.cursor
         if tu > 0:
@@ -83,26 +88,30 @@ class BitString:
         ret.array = ret.array[:math.ceil(ret.cursor / 8)]
         return ret.array
 
-    def get_free_bits(self):
+    def get_free_bits(self) -> int:
+        """Returns the number of not used bits in the BitString."""
         return self.length - self.cursor
 
     def get_used_bits(self):
         return self.cursor
 
-    def write_bit_array(self, ba):
+    def write_bit_array(self, ba: bytearray):
+        """Writes a bytearray as a bit array one bit by one."""
         for b in ba.decode('utf-8'):
             self.write_bit(b)
 
-    def write_bit(self, b):
+    def write_bit(self, b: str | int):
         b = int(b)
-        if b > 0:
+        if b == 1:
             self.on(self.cursor)
-        else:
+        elif b == 0:
             self.off(self.cursor)
+        else:
+            raise Exception("BitString can only write 1 or 0")
 
         self.cursor += 1
 
-    def write_uint(self, number, bit_length):
+    def write_uint(self, number: int, bit_length: int):
         if bit_length == 0 or len("{0:b}".format(number)) > bit_length:
             if number == 0:
                 return
@@ -118,10 +127,11 @@ class BitString:
             else:
                 self.write_bit(0)
 
-    def write_uint8(self, ui8):
+    def write_uint8(self, ui8: int):
+        """Just as write_uint(n, 8), but only write_uint8(n) (?)."""
         self.write_uint(ui8, 8)
 
-    def write_int(self, number, bit_length):
+    def write_int(self, number: int, bit_length: int):
         if bit_length == 1:
             if number == -1:
                 self.write_bit(1)
@@ -141,18 +151,19 @@ class BitString:
                 self.write_bit(0)
                 self.write_uint(number, bit_length - 1)
 
-    def write_string(self, value):
+    def write_string(self, value: str):
         self.write_bytes(bytes(value, encoding="utf-8"))
 
-    def write_bytes(self, ui8_array):
+    def write_bytes(self, ui8_array: bytes):
         for ui8 in ui8_array:
             self.write_uint8(ui8)
 
-    def write_bit_string(self, another_bit_string):
+    def write_bit_string(self, another_bit_string: "BitString"):
         for bit in another_bit_string:
             self.write_bit(bit)
 
-    def write_address(self, address):
+    def write_address(self, address: Address | None):
+        """Writes an address, maybe zero-address (None) to the BitString."""
         if address is None:
             self.write_uint(0, 2)
         else:
@@ -161,7 +172,7 @@ class BitString:
             self.write_int(address.wc, 8)
             self.write_bytes(address.hash_part)
 
-    def write_grams(self, amount):
+    def write_grams(self, amount: int):
         if amount == 0:
             self.write_uint(0, 4)
         else:
