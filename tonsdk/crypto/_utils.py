@@ -5,6 +5,8 @@ from hashlib import pbkdf2_hmac
 
 from ._settings import PBKDF_ITERATIONS
 
+from nacl.bindings import crypto_sign_ed25519_sk_to_pk
+
 
 def get_secure_random_number(min_v, max_v):
     range_betw = max_v - min_v
@@ -33,3 +35,7 @@ def is_basic_seed(entropy):
     seed = pbkdf2_hmac("sha512", entropy, 'TON seed version'.encode(
         'utf-8'), max(1, math.floor(PBKDF_ITERATIONS / 256)))
     return seed[0] == 0
+
+
+def private_key_to_public_key(priv_k: bytes):
+    return crypto_sign_ed25519_sk_to_pk(priv_k)
