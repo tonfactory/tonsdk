@@ -6,6 +6,7 @@ from hashlib import pbkdf2_hmac
 from ._settings import PBKDF_ITERATIONS
 
 from nacl.bindings import crypto_sign_ed25519_sk_to_pk
+from nacl.signing import VerifyKey, exc
 
 
 def get_secure_random_number(min_v, max_v):
@@ -39,3 +40,12 @@ def is_basic_seed(entropy):
 
 def private_key_to_public_key(priv_k: bytes):
     return crypto_sign_ed25519_sk_to_pk(priv_k)
+
+
+def verify_sign(public_key: bytes, signed_message: bytes, signature: bytes):
+    key = VerifyKey(public_key)
+    try:
+        key.verify(signed_message, signature)
+        return True
+    except exc.BadSignatureError:
+        return False

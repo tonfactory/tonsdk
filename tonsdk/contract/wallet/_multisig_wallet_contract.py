@@ -6,7 +6,7 @@ from .. import Contract
 from ._wallet_contract import WalletContract
 from ...boc import Cell, begin_cell, begin_dict, Builder
 from ...utils import Address, sign_message
-from ...crypto import private_key_to_public_key
+from ...crypto import private_key_to_public_key, verify_sign
 
 
 class MultiSigWalletContractBase(WalletContract):
@@ -40,10 +40,18 @@ class MultiSigOrder:
         self.signatures[owner_id] = sign_message(bytes(signing_hash), secret_key).signature
         return signing_hash
 
+    def add_signature(self, owner_id: int, signature: bytes, multisig_wallet):
+        signing_hash = self.payload.bytes_hash()
+        if not verify_sign(public_key=multisig_wallet.options['public_keys'][owner_id],
+                           signed_message=bytes(signing_hash),
+                           signature=signature):
+            raise Exception('Invalid signature')
+        self.signatures[owner_id] = signature
+
     def union_signatures(self, other):
         self.signatures = dict(list(self.signatures.items()) + list(other.signatures.items()))
 
-    def clear_signatures(self, other):
+    def clear_signatures(self):
         self.signatures = {}
 
     def to_cell(self, owner_id: int):
