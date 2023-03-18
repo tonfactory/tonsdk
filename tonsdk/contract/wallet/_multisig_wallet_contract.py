@@ -81,7 +81,7 @@ class MultiSigOrderBuilder:
         self.messages = begin_cell()
         self.query_id = 0
 
-    def add_message(self, to_addr, amount, payload="", send_mode=3, state_init=None):
+    def add_message(self, to_addr, amount, payload="", send_mode=3, state_init=None, query_id: int = 0):
         payload_cell = Cell()
         if payload:
             if type(payload) == str:
@@ -98,12 +98,15 @@ class MultiSigOrderBuilder:
         order = Contract.create_common_msg_info(
             order_header, state_init, payload_cell)
 
-        return self.add_message_from_cell(order, send_mode)
+        return self.add_message_from_cell(order, send_mode, query_id=query_id)
 
-    def add_message_from_cell(self, message: Cell, mode: int = 3):
+    def add_message_from_cell(self, message: Cell, mode: int = 3, query_id: int = 0):
         if len(self.messages.refs) >= 4:
             raise Exception('only 4 refs are allowed')
-        self.update_query_id()
+        if not query_id:
+            self.update_query_id()
+        else:
+            self.query_id = query_id
         self.messages.store_uint(mode, 8)
         self.messages.store_ref(begin_cell().store_cell(message).end_cell())
 
