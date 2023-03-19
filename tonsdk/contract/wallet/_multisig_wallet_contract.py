@@ -1,6 +1,7 @@
 import base64
 import time
 import decimal
+from typing import Optional
 
 from .. import Contract
 from ._wallet_contract import WalletContract
@@ -75,13 +76,12 @@ class MultiSigOrder:
 
 
 class MultiSigOrderBuilder:
-    def __init__(self, wallet_id, offset=7200):
+    def __init__(self, wallet_id, offset=7200, query_id: Optional[int] = None):
         self.wallet_id = wallet_id
-        self.query_offset = offset
         self.messages = begin_cell()
-        self.query_id = 0
+        self.query_id = query_id if query_id is not None else self.generate_query_id(offset)
 
-    def add_message(self, to_addr, amount, payload="", send_mode=3, state_init=None, query_id: int = 0):
+    def add_message(self, to_addr, amount, payload="", send_mode=3, state_init=None):
         payload_cell = Cell()
         if payload:
             if type(payload) == str:
@@ -98,17 +98,14 @@ class MultiSigOrderBuilder:
         order = Contract.create_common_msg_info(
             order_header, state_init, payload_cell)
 
-        return self.add_message_from_cell(order, send_mode, query_id=query_id)
+        return self.add_message_from_cell(order, send_mode)
 
-    def add_message_from_cell(self, message: Cell, mode: int = 3, query_id: int = 0):
+    def add_message_from_cell(self, message: Cell, mode: int = 3):
         if len(self.messages.refs) >= 4:
             raise Exception('only 4 refs are allowed')
-        if not query_id:
-            self.update_query_id()
-        else:
-            self.query_id = query_id
         self.messages.store_uint(mode, 8)
         self.messages.store_ref(begin_cell().store_cell(message).end_cell())
+        return message
 
     def clear_messages(self):
         self.messages = begin_cell()
@@ -120,8 +117,9 @@ class MultiSigOrderBuilder:
                              .store_cell(self.messages.end_cell()) \
                              .end_cell())
 
-    def update_query_id(self):
-        self.query_id = int(time.time() + self.query_offset) << 32
+    @staticmethod
+    def generate_query_id(offset):
+        return int(time.time() + offset) << 32
 
 
 class MultiSigWallet(MultiSigWalletContractBase):
