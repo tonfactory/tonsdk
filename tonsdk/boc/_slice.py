@@ -87,7 +87,7 @@ class Slice:
             return None
         self.read_bit()  # anycast
         workchain_id = hex(self.read_int(8))[2:]
-        hashpart = hex(self.read_uint(256))[2:]
+        hashpart = self.read_bytes(32).hex()
         return Address(workchain_id + ":" + hashpart)
 
     def read_coins(self) -> int:
