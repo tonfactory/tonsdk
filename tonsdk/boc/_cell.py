@@ -165,6 +165,10 @@ class Cell:
 
         return ser_arr
 
+    def begin_parse(self):
+        from ._slice import Slice
+        return Slice(self)
+
     @staticmethod
     def one_from_boc(serialized_boc):
         cells = deserialize_boc(serialized_boc)
