@@ -1,5 +1,6 @@
 import decimal
 from enum import Enum
+from typing import Union
 
 from .. import Contract
 from ...boc import Cell
@@ -40,16 +41,15 @@ class WalletContract(Contract):
                                 to_addr: str,
                                 amount: int,
                                 seqno: int,
-                                payload: Cell | str | bytes | None = None,
+                                payload: Union[Cell, str, bytes, None] = None,
                                 send_mode=SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately,
                                 dummy_signature=False, state_init=None):
         payload_cell = Cell()
         if payload:
-            t = type(payload)
-            if t == str:
+            if isinstance(payload, str):
                 payload_cell.bits.write_uint(0, 32)
                 payload_cell.bits.write_string(payload)
-            elif t == Cell:
+            elif isinstance(payload, Cell):
                 payload_cell = payload
             else:
                 payload_cell.bits.write_bytes(payload)

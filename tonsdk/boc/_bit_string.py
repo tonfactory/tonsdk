@@ -1,5 +1,7 @@
 import copy
 import math
+from typing import Union, Optional
+
 from ..utils._address import Address
 
 
@@ -100,7 +102,7 @@ class BitString:
         for b in ba.decode('utf-8'):
             self.write_bit(b)
 
-    def write_bit(self, b: str | int):
+    def write_bit(self, b: Union[str, int]):
         b = int(b)
         if b == 1:
             self.on(self.cursor)
@@ -162,7 +164,7 @@ class BitString:
         for bit in another_bit_string:
             self.write_bit(bit)
 
-    def write_address(self, address: Address | None):
+    def write_address(self, address: Optional[Address]):
         """Writes an address, maybe zero-address (None) to the BitString."""
         if address is None:
             self.write_uint(0, 2)

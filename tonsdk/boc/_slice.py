@@ -1,4 +1,6 @@
 import bitarray
+from typing import Optional
+
 from ._cell import Cell
 from ..utils._address import Address
 
@@ -80,7 +82,7 @@ class Slice:
         self.bits = tmp
         return value
 
-    def read_msg_addr(self) -> Address | None:
+    def read_msg_addr(self) -> Optional[Address]:
         """Reads contract address from the slice.
         May return None if there is a zero-address."""
         if self.read_uint(2) == 0:
@@ -118,7 +120,7 @@ class Slice:
     def preload_ref(self) -> Cell:
         return self.refs[self.ref_offset]
 
-    def load_dict(self) -> Cell | None:
+    def load_dict(self) -> Optional[Cell]:
         """Loads dictionary like a Cell from the slice.
         Returns None if the dictionary was null()."""
         not_null = self.read_bit()
@@ -127,7 +129,7 @@ class Slice:
         else:
             return None
 
-    def preload_dict(self) -> Cell | None:
+    def preload_dict(self) -> Optional[Cell]:
         not_null = self.preload_bit()
         if not_null:
             return self.preload_ref()

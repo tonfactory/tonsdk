@@ -1,4 +1,5 @@
 from math import floor
+from typing import List, Tuple
 
 from .nft_utils import create_offchain_uri_cell, serialize_uri
 from ... import Contract
@@ -63,7 +64,7 @@ class NFTCollection(Contract):
     
     def create_batch_mint_body(
             self, from_item_index: int,
-            contents_and_owners: list[tuple[str, Address]],
+            contents_and_owners: List[Tuple[str, Address]],
             amount_per_one: int = 50000000, query_id: int = 0
     ) -> Cell:
         body = Cell()
