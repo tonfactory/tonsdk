@@ -1,8 +1,9 @@
 from math import floor
+from typing import List, Tuple
 
 from .nft_utils import create_offchain_uri_cell, serialize_uri
 from ... import Contract
-from ....boc import Cell
+from ....boc import Cell, DictBuilder
 from ....utils import Address
 
 
@@ -50,7 +51,7 @@ class NFTCollection(Contract):
     ) -> Cell:
         body = Cell()
         body.bits.write_uint(1, 32)
-        body.bits.write_uint(query_id, 64)  # query_id
+        body.bits.write_uint(query_id, 64)
         body.bits.write_uint(item_index, 64)
         body.bits.write_grams(amount)
         content_cell = Cell()
@@ -59,6 +60,29 @@ class NFTCollection(Contract):
         uri_content.bits.write_bytes(serialize_uri(item_content_uri))
         content_cell.refs.append(uri_content)
         body.refs.append(content_cell)
+        return body
+    
+    def create_batch_mint_body(
+            self, from_item_index: int,
+            contents_and_owners: List[Tuple[str, Address]],
+            amount_per_one: int = 50000000, query_id: int = 0
+    ) -> Cell:
+        body = Cell()
+        body.bits.write_uint(2, 32)
+        body.bits.write_uint(query_id, 64)
+        deploy_list = DictBuilder(64)
+        for i, (item_content_uri, new_owner_address) in \
+                enumerate(contents_and_owners):
+            item = Cell()
+            item.bits.write_grams(amount_per_one)
+            content = Cell()
+            content.bits.write_address(new_owner_address)
+            uri_content = Cell()
+            uri_content.bits.write_bytes(serialize_uri(item_content_uri))
+            content.refs.append(uri_content)
+            item.refs.append(content)
+            deploy_list.store_cell(i + from_item_index, item)
+        body.refs.append(deploy_list.end_dict())
         return body
 
     def create_get_royalty_params_body(self, query_id: int = 0) -> Cell:
