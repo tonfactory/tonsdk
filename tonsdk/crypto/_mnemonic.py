@@ -33,6 +33,13 @@ def mnemonic_to_private_key(mnemo_words: List[str], password: Optional[str] = No
         mnemo_words, 'TON default seed'.encode('utf-8'), password)
     return crypto_sign_seed_keypair(seed[:32])
 
+def mnemonic_to_hd_seed(mnemo_words: List[str], password: Optional[str] = None) -> bytes:
+    """
+    :rtype: (bytes(public_key), bytes(secret_key))
+    """
+    seed = mnemonic_to_seed(
+        mnemo_words, 'TON HD Keys seed'.encode('utf-8'), password)
+    return seed
 
 def mnemonic_to_wallet_key(mnemo_words: List[str], password: Optional[str] = None) -> Tuple[bytes, bytes]:
     """

@@ -2,7 +2,8 @@ from .wordlist import wordlist
 from hashlib import pbkdf2_hmac
 from typing import List, Optional
 import math, hashlib, hmac
-from .._settings import PBKDF_ITERATIONS
+
+PBKDF_ITERATIONS = 100000
 
 def lpad(string, pad_string, length):
     while len(string) < length:
