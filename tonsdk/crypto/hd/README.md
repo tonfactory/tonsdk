@@ -1,7 +1,7 @@
 # Derivation path
 
 ```python
-def path_for_account(network: int, workchain: int == 0, account: int, wallet_version: int == 0):
+def path_for_account(network: int = 0, workchain: int = 0, account: int = 0, wallet_version: int = 0):
     # network default mainnet 0 and testnet 1
     chain = 255 if worckchain === -1 else 0
     return [44, 607, network, chain, account, wallet_version] # Last zero is reserved for alternative wallet contracts
@@ -23,3 +23,4 @@ def tg_user_id_to_account(userid: int) -> Tuple[int, int]:
         account_id = user_id - start_limit + step
     return [network, account_id]
 ```
+See examples/wallet/test_hd_wallet.py
