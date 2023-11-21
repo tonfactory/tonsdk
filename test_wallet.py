@@ -1,5 +1,5 @@
 from tonsdk.crypto import mnemonic_new, mnemonic_is_valid, mnemonic_to_hd_seed
-from tonsdk.crypto.hd import mnemonic_validate, derive_mnemonics_path, get_mnemonics_master_key_from_seed
+from tonsdk.crypto.hd import mnemonic_validate, derive_mnemonics_path, get_mnemonics_master_key_from_seed, path_for_account, tg_userid_to_account
 from tonsdk.contract.wallet import Wallets, WalletVersionEnum
 from tonsdk.utils import to_nano, bytes_to_b64str
 
@@ -23,7 +23,8 @@ mnemonics, pub_k, priv_k, wallet = Wallets.from_mnemonics(mnemonics=mnemonics, v
 print("mnemonics", mnemonics)
 print("pub_k", bytes_to_b64str(pub_k))
 print("priv_k", bytes_to_b64str(priv_k))
-print("wallet", wallet.address.to_string(True, True, True))
+print("wallet Bounceble", wallet.address.to_string(True, True, True))
+print("wallet UnBounceble", wallet.address.to_string(True, True, False))
 
 root_mnemonic = [
         "stock", "spin", "miss",
@@ -48,7 +49,7 @@ mnemonics_path_0 = [
             'race', 'cattle', 'capable'
         ]
 
-path_10 = [0, 10, 1000000000],
+path_10 = [0, 10, 1000000000]
 mnemonics_path_0_10 = [
             'venture', 'december', 'exile',
             'shell', 'venture', 'chaos',
@@ -65,14 +66,32 @@ print("seed", root_hd_seed_from_mnemonic)
 print("mnemonic_to_hd_seed Equal root_seed", root_seed == root_hd_seed_from_mnemonic)
 
 
-derive_mnemonics_path_0 = derive_mnemonics_path(seed=mnemonic_to_hd_seed(root_mnemonic), path=path_0)
+derive_mnemonics_path_0 = derive_mnemonics_path(seed=mnemonic_to_hd_seed(root_mnemonic), path=path_10)
 print("deriveMnemonicsPath", derive_mnemonics_path_0)
-print("deriveMnemonicsPath_0 Equal mnemonics_path_0", derive_mnemonics_path_0 == mnemonics_path_0)
+print("deriveMnemonicsPath_0 Equal mnemonics_path_0", derive_mnemonics_path_0 == mnemonics_path_0_10)
 
-pair_key_hd_infunc = get_mnemonics_master_key_from_seed(seed=mnemonic_to_hd_seed(root_mnemonic))
-print('hd_pubk_func', bytes_to_b64str(pair_key_hd_infunc[0]))
-print('hd_privk_func', bytes_to_b64str(pair_key_hd_infunc[1]))
+mnemonics, pub_k, priv_k, wallet = Wallets.from_mnemonics(mnemonics=derive_mnemonics_path_0, version=version, workchain=wc)
+print("pub_k", bytes_to_b64str(pub_k))
+print("priv_k", bytes_to_b64str(priv_k))
+print("wallet Bounceble", wallet.address.to_string(True, True, True))
+print("wallet UnBounceble", wallet.address.to_string(True, True, False))
 
+
+# for tg integration
+tg_userid = 5432100000
+print("tg_userid", tg_userid)
+network, account = tg_userid_to_account(tg_userid)
+path = path_for_account(network=network, account=account)
+print("path", path)
+
+derive_mnemonics_path_tg_userid = derive_mnemonics_path(seed=mnemonic_to_hd_seed(root_mnemonic), path=path)
+print("deriveMnemonicsPath", derive_mnemonics_path_tg_userid)
+
+mnemonics, pub_k, priv_k, wallet = Wallets.from_mnemonics(mnemonics=derive_mnemonics_path_tg_userid, version=version, workchain=wc)
+print("pub_k", bytes_to_b64str(pub_k))
+print("priv_k", bytes_to_b64str(priv_k))
+print("wallet Bounceble", wallet.address.to_string(True, True, True))
+print("wallet NonBounceble", wallet.address.to_string(True, True, False))
 
 """to external deploy"""
 # boc = wallet.create_init_external_message()

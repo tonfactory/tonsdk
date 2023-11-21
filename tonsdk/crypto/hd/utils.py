@@ -1,6 +1,6 @@
 from .wordlist import wordlist
 from hashlib import pbkdf2_hmac
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import math, hashlib, hmac
 
 PBKDF_ITERATIONS = 100000
@@ -50,9 +50,7 @@ def is_password_needed(mnemonic_array: List[str]):
     return (is_password_seed(passless_entropy)) and not (is_basic_seed(passless_entropy))
 
 def mnemonic_validate(mnemonic_array: List[str], password: Optional[str] = None):
-    
     mnemonic_array = normalize_mnemonic(mnemonic_array)
-
     for word in mnemonic_array:
         if word not in wordlist:
             return False
@@ -60,5 +58,21 @@ def mnemonic_validate(mnemonic_array: List[str], password: Optional[str] = None)
         if password and len(password) > 0:
             if not is_password_needed(mnemonic_array):
                 return False
-
     return is_basic_seed(mnemonic_to_entropy(mnemonic_array, password))
+
+def path_for_account(network: int = 0, workchain: int = 0, account: int = 0, wallet_version: int = 0):
+    # network default mainnet 0 and testnet 1
+    chain = 255 if workchain == -1 else workchain
+    return [44, 607, network, chain, account, wallet_version] # Last zero is reserved for alternative wallet contracts
+
+def tg_userid_to_account(userid: int) -> Tuple[int, int]:
+    start_limit = 0
+    step = 2000000000
+    network = 0
+    accountid = userid
+
+    while start_limit <= userid:
+        start_limit += step
+        network = (start_limit - step) // step * 2
+        accountid = userid - start_limit + step
+    return [network, accountid]
