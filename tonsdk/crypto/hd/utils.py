@@ -65,14 +65,14 @@ def path_for_account(network: int = 0, workchain: int = 0, account: int = 0, wal
     chain = 255 if workchain == -1 else workchain
     return [44, 607, network, chain, account, wallet_version] # Last zero is reserved for alternative wallet contracts
 
-def tg_userid_to_account(userid: int) -> Tuple[int, int]:
+def tg_user_id_to_account(user_id: int) -> Tuple[int, int]:
     start_limit = 0
     step = 2000000000
     network = 0
-    accountid = userid
+    account_id = user_id
 
-    while start_limit <= userid:
+    while start_limit <= user_id:
         start_limit += step
         network = (start_limit - step) // step * 2
-        accountid = userid - start_limit + step
-    return [network, accountid]
+        account_id = user_id - start_limit + step
+    return [network, account_id]

@@ -1,7 +1,7 @@
-from tonsdk.crypto import mnemonic_new, mnemonic_is_valid, mnemonic_to_hd_seed
-from tonsdk.crypto.hd import mnemonic_validate, derive_mnemonics_path, get_mnemonics_master_key_from_seed, path_for_account, tg_userid_to_account
+from tonsdk.crypto import mnemonic_to_hd_seed
+from tonsdk.crypto.hd import derive_mnemonics_path, path_for_account, tg_user_id_to_account
 from tonsdk.contract.wallet import Wallets, WalletVersionEnum
-from tonsdk.utils import to_nano, bytes_to_b64str
+from tonsdk.utils import bytes_to_b64str
 
 mnemonics = [
   'squeeze', 'afford',  'brother',
@@ -78,9 +78,9 @@ print("wallet UnBounceble", wallet.address.to_string(True, True, False))
 
 
 # for tg integration
-tg_userid = 5432100000
-print("tg_userid", tg_userid)
-network, account = tg_userid_to_account(tg_userid)
+tg_user_id = 5432100000
+print("tg_userid", tg_user_id)
+network, account = tg_user_id_to_account(tg_user_id)
 path = path_for_account(network=network, account=account)
 print("path", path)
 
