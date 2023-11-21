@@ -1,5 +1,5 @@
 from tonsdk.crypto import mnemonic_new, mnemonic_is_valid, mnemonic_to_hd_seed
-from tonsdk.crypto.hd import mnemonic_validate, derive_mnemonics_path
+from tonsdk.crypto.hd import mnemonic_validate, derive_mnemonics_path, get_mnemonics_master_key_from_seed
 from tonsdk.contract.wallet import Wallets, WalletVersionEnum
 from tonsdk.utils import to_nano, bytes_to_b64str
 
@@ -21,8 +21,8 @@ mnemonics, pub_k, priv_k, wallet = Wallets.from_mnemonics(mnemonics=mnemonics, v
 
 
 print("mnemonics", mnemonics)
-print("pub_k", pub_k)
-print("priv_k", priv_k)
+print("pub_k", bytes_to_b64str(pub_k))
+print("priv_k", bytes_to_b64str(priv_k))
 print("wallet", wallet.address.to_string(True, True, True))
 
 root_mnemonic = [
@@ -65,9 +65,13 @@ print("seed", root_hd_seed_from_mnemonic)
 print("mnemonic_to_hd_seed Equal root_seed", root_seed == root_hd_seed_from_mnemonic)
 
 
-derive_mnemonics_path_0 = derive_mnemonics_path(seed=root_hd_seed_from_mnemonic.encode("utf-8"), path=path_0)
+derive_mnemonics_path_0 = derive_mnemonics_path(seed=mnemonic_to_hd_seed(root_mnemonic), path=path_0)
 print("deriveMnemonicsPath", derive_mnemonics_path_0)
 print("deriveMnemonicsPath_0 Equal mnemonics_path_0", derive_mnemonics_path_0 == mnemonics_path_0)
+
+pair_key_hd_infunc = get_mnemonics_master_key_from_seed(seed=mnemonic_to_hd_seed(root_mnemonic))
+print('hd_pubk_func', bytes_to_b64str(pair_key_hd_infunc[0]))
+print('hd_privk_func', bytes_to_b64str(pair_key_hd_infunc[1]))
 
 
 """to external deploy"""

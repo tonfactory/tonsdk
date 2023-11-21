@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 import math, hmac
-from hashlib import pbkdf2_hmac, sha512
+from hashlib import pbkdf2_hmac
+import hashlib
 from .utils import bytes_to_mnemonics, mnemonic_validate
 
 import struct
@@ -22,7 +23,8 @@ def mnemonic_from_random_seed(seed: bytes, words_count: int = 24, password: Opti
         current_seed = entropy
 
 def get_mnemonics_master_key_from_seed(seed: bytes) -> Tuple[bytes, bytes]:
-    I = hmac.new((" ".join(MNEMONICS_SEED)).encode('utf-8'), seed, sha512).digest()
+    I = hmac.new(MNEMONICS_SEED.encode(
+        'utf-8'), seed, hashlib.sha512).digest()
     IL = I[:32]
     IR = I[32:]
     return [IL, IR]
@@ -34,13 +36,14 @@ def derive_mnemonic_hardened_key(parent: Tuple[bytes, bytes], index: int) -> Tup
     index_buffer = index.to_bytes(4, byteorder='big')
     data = bytes([0]) + parent[0] + index_buffer
 
-    I = hmac.new(parent[1], data, sha512).digest()
+    I = hmac.new(parent[1], data, hashlib.sha512).digest()
     IL = I[:32]
     IR = I[32:]
     return [IL, IR]
 
 def derive_mnemonics_path(seed: bytes, path: List[int], words_count: int = 24, password: Optional[str] = None):
     state = get_mnemonics_master_key_from_seed(seed)
+    # 
     # crypto_sign_seed_keypair(seed[:32])
     remaining = path.copy()
     while len(remaining) > 0:
