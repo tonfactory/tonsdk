@@ -32,9 +32,11 @@ def get_mnemonics_master_key_from_seed(seed: bytes) -> Tuple[bytes, bytes]:
 def derive_mnemonic_hardened_key(parent: Tuple[bytes, bytes], index: int) -> Tuple[bytes, bytes]:
     if index >= HARDENED_OFFSET:
         raise ValueError('Key index must be less than offset')
-
-    index_buffer = index.to_bytes(4, byteorder='big')
-    data = bytes([0]) + parent[0] + index_buffer
+    
+    index += HARDENED_OFFSET
+    buffer = bytearray(4)
+    struct.pack_into('>I', buffer, 0, index)
+    data = bytes([0]) + parent[0] + buffer
 
     I = hmac.new(parent[1], data, hashlib.sha512).digest()
     IL = I[:32]
