@@ -1,12 +1,7 @@
 from typing import List, Optional, Tuple
-import math, hmac
+import math, hmac, struct, hashlib
 from hashlib import pbkdf2_hmac
-import hashlib
 from .utils import bytes_to_mnemonics, mnemonic_validate
-
-import struct
-
-from nacl.bindings import crypto_sign_seed_keypair
 
 HARDENED_OFFSET = 0x80000000
 MNEMONICS_SEED = 'TON Mnemonics HD seed'
@@ -45,12 +40,10 @@ def derive_mnemonic_hardened_key(parent: Tuple[bytes, bytes], index: int) -> Tup
 
 def derive_mnemonics_path(seed: bytes, path: List[int], words_count: int = 24, password: Optional[str] = None):
     state = get_mnemonics_master_key_from_seed(seed)
-    # 
-    # crypto_sign_seed_keypair(seed[:32])
-    remaining = path.copy()
-    while len(remaining) > 0:
-        index = remaining[0]
-        remaining = remaining[1:]
+   
+    while len(path) > 0:
+        index = path[0]
+        path = path[1:]
         state = derive_mnemonic_hardened_key(state, index)
 
     return mnemonic_from_random_seed(state[0], words_count, password)
