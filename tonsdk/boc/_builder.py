@@ -2,6 +2,7 @@
 
 from ._bit_string import BitString
 from ._cell import Cell
+from ._slice import Slice
 
 class Builder:
     def __init__(self):
@@ -19,6 +20,14 @@ class Builder:
 
     def store_ref(self, src: Cell):
         self.refs.append(src)
+        return self
+    
+    def store_slice(self, slice: Slice):
+        if len(self.refs) + len(slice.refs) > 4:
+            raise Exception('builder refs overflow')
+        self.bits.write_bit_array(slice.bits)
+        for i in range(slice.ref_offset, len(slice.refs)):
+            self.store_ref(slice.refs[i])
         return self
 
     def store_maybe_ref(self, src):
