@@ -30,9 +30,15 @@ class JettonWallet(Contract):
         cell.bits.write_address(response_address or to_address)
         cell.bits.write_bit(0)  # null custom_payload
         cell.bits.write_grams(forward_amount)
-        cell.bits.write_bit(0)  # forward_payload in this slice, not separate cell
-        if forward_payload:
-            cell.bits.write_bytes(forward_payload)
+        if not forward_payload or len(forward_payload) < 40:
+            cell.bits.write_bit(0)  # forward_payload in this slice, not separate cell
+            if forward_payload:
+                cell.bits.write_bytes(forward_payload)
+        else:
+            forward_payload_cell = Cell()
+            forward_payload_cell.bits.write_bytes(forward_payload)
+            cell.bits.write_bit(1) # forward_payload in another cell
+            cell.refs.append(forward_payload_cell)
 
         return cell
 
