@@ -20,7 +20,7 @@ class SendModeEnum(int, Enum):
 
 class WalletContract(Contract):
     def __init__(self, **kwargs):
-        if (("public_key" not in kwargs or "private_key" not in kwargs) and "address" not in kwargs) and 'public_keys' not in kwargs:
+        if (("public_key" not in kwargs and "private_key" not in kwargs) and "address" not in kwargs) and 'public_keys' not in kwargs:
             raise Exception(
                 "WalletContract required publicKey or address in options")
         super().__init__(**kwargs)
