@@ -1,2 +1,2 @@
 pynacl>=1.4.0
-bitarray==2.6.0
+bitarray>=2.6.0
