@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Union
 
 from ..boc import Cell
 from ..utils import Address
@@ -140,3 +141,28 @@ class Contract(ABC):
         if library:
             state_init.refs.append(library)
         return state_init
+
+    @classmethod
+    def create_out_msg(
+            cls,
+            address: str,
+            amount: int,
+            payload: Union[str, bytes, Cell, None] = None,
+            state_init: Union[Cell, None] = None,
+    ) -> Cell:
+        payload_cell = Cell()
+        if payload:
+            if isinstance(payload, Cell):
+                payload_cell = payload
+            elif isinstance(payload, str):
+                if len(payload) > 0:
+                    payload_cell.bits.write_uint(0, 32)
+                    payload_cell.bits.write_string(payload)
+            else:
+                payload_cell.bits.write_bytes(payload)
+
+        order_header = cls.create_internal_message_header(address, amount)
+        order = cls.create_common_msg_info(
+            order_header, state_init, payload_cell
+        )
+        return order
