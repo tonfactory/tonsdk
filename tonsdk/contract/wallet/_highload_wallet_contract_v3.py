@@ -1,8 +1,9 @@
+import decimal
+
 from .. import Contract
 from ._wallet_contract import WalletContract
-from ...boc import Cell
-from ...utils import sign_message, HighloadQueryId, check_timeout
-from ...crypto import private_key_to_public_key
+from ...boc import Cell, begin_cell, begin_dict
+from ...utils import Address, sign_message, HighloadQueryId, check_timeout
 
 
 class HighloadWalletV3Contract(WalletContract):
@@ -108,3 +109,35 @@ class HighloadWalletV3Contract(WalletContract):
             "code": code,
             "data": data,
         }
+
+    def create_multi_transfer_message(
+        self,
+        recipients_list: list,
+        query_id: HighloadQueryId,
+        create_at: int,
+        #     todo change send mode default here:
+        send_mode: int = 3,
+        need_deploy: bool = False):
+
+        if create_at is None or create_at < 0:
+            raise ValueError("create_at must be number >= 0")
+
+        recipients = begin_dict(16)
+        for i, recipient in enumerate(recipients_list):
+            message_to_send = self.create_out_msg(
+                Address(recipient['address']),
+                decimal.Decimal(recipient['amount']),
+                recipient['payload'],
+                recipient.get('state_init'))
+
+            recipients.store_cell(
+                i, begin_cell() \
+                    .store_uint8(recipient.get('send_mode', 0)) \
+                    .store_ref(message_to_send).end_cell()
+            )
+
+        signing_message = self.create_signing_message(query_id, create_at, send_mode, recipients.end_cell())
+        # signing_message.store_maybe_ref(recipients.end_cell())
+        return self.create_external_message(
+            signing_message.end_cell(), need_deploy
+        )
