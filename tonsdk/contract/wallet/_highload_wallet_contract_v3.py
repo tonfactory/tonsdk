@@ -117,7 +117,8 @@ class HighloadWalletV3Contract(WalletContract):
         create_at: int,
         #     todo change send mode default here:
         send_mode: int = 3,
-        need_deploy: bool = False):
+        need_deploy: bool = False
+    ):
 
         if create_at is None or create_at < 0:
             raise ValueError("create_at must be number >= 0")
@@ -125,8 +126,8 @@ class HighloadWalletV3Contract(WalletContract):
         recipients = begin_dict(16)
         for i, recipient in enumerate(recipients_list):
             message_to_send = self.create_out_msg(
-                Address(recipient['address']),
-                decimal.Decimal(recipient['amount']),
+                recipient['address'],
+                recipient['amount'],
                 recipient['payload'],
                 recipient.get('state_init'))
 
@@ -139,5 +140,5 @@ class HighloadWalletV3Contract(WalletContract):
         signing_message = self.create_signing_message(query_id, create_at, send_mode, recipients.end_cell())
         # signing_message.store_maybe_ref(recipients.end_cell())
         return self.create_external_message(
-            signing_message.end_cell(), need_deploy
+            signing_message, need_deploy
         )
