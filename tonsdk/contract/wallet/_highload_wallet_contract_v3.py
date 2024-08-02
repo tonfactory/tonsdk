@@ -6,6 +6,11 @@ from ...boc import Cell, begin_cell, begin_dict
 from ...utils import Address, sign_message, HighloadQueryId, check_timeout, to_nano
 
 
+class OPEnum:
+    InternalTransfer = 0xae42e5a4
+
+
+
 class HighloadWalletV3Contract(WalletContract):
     def __init__(self, **kwargs):
         # https://github.com/ton-blockchain/highload-wallet-contract-v3
@@ -47,8 +52,7 @@ class HighloadWalletV3Contract(WalletContract):
         cell.bits.write_uint(self.options["wallet_id"], 32)
         cell.refs.append(message_to_send)
         cell.bits.write_uint(send_mode, 8)
-        cell.bits.write_uint(query_id.shift, 13)
-        cell.bits.write_uint(query_id.bit_number, 10)
+        cell.bits.write_uint(query_id.query_id, 23)
         cell.bits.write_uint(created_at, 64)
         cell.bits.write_uint(self.options["timeout"], 22)
         return cell
@@ -78,6 +82,7 @@ class HighloadWalletV3Contract(WalletContract):
             self,
             signing_message: Cell,
             need_deploy: bool,
+            payload
     ):
         signature = sign_message(bytes(signing_message.bytes_hash()), self.options['private_key']).signature
 
@@ -95,7 +100,7 @@ class HighloadWalletV3Contract(WalletContract):
             code = deploy["code"]
             data = deploy["data"]
 
-        header = self.create_external_message_header(self.address)
+        header = self.create_external_message_header(self.address, payload)
         result_message = Contract.create_common_msg_info(
             header, state_init, body
         )
@@ -117,7 +122,7 @@ class HighloadWalletV3Contract(WalletContract):
             query_id: HighloadQueryId,
             create_at: int,
             #     todo change send mode default here:
-            send_mode=SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately,
+            send_mode: int = SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately,
             need_deploy: bool = False
     ):
         amount = 0
@@ -140,11 +145,11 @@ class HighloadWalletV3Contract(WalletContract):
             value.bits.write_uint8(send_mode)
             value.write_cell(message_to_send)
             recipients.store_cell(i, value)
-
-        # out = self.create_internal_message_h(grams=to_nano(1, "nanoton") , payload=recipients.end_cell())
-        signing_message = self.create_signing_message(query_id, create_at, send_mode, recipients.end_cell())
+        payload = begin_cell().store_uint(OPEnum.InternalTransfer ,32).store_uint(query_id.query_id ,64).store_ref(recipients.end_cell()).end_cell()
+        # out = self.create_internal_message_h(dest=self.address ,grams=to_nano(0, "nanoton"), payload=payload)
+        signing_message = self.create_signing_message(query_id, create_at, send_mode, out)
         return self.create_external_message(
-            signing_message, need_deploy
+            signing_message, need_deploy, payload
         )
 
     @classmethod
@@ -180,3 +185,4 @@ class HighloadWalletV3Contract(WalletContract):
         message.bits.write_uint(1, 1)
         message.refs.append(payload_cell)
         return message
+
