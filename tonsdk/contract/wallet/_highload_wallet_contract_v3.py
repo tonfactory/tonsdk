@@ -1,6 +1,5 @@
-import decimal
 from functools import reduce
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 from .. import Contract
 from ._wallet_contract import WalletContract, SendModeEnum
 from ...boc import Cell, begin_cell
@@ -36,13 +35,6 @@ class HighloadWalletV3ContractBase(WalletContract):
     ) -> Cell:
         """
         Creates and initializes a Cell object for a signing message.
-        Args:
-            query_id (HighloadQueryId): The query ID for the message.
-            created_at (int): The timestamp when the message was created.
-            send_mode (int): The mode in which the message should be sent.
-            message_to_send (Cell): The message to be sent.
-        Returns:
-            Cell: The initialized Cell object for the signing message.
         """
         cell = Cell()
         cell.bits.write_uint(self.options["wallet_id"], 32)
@@ -80,14 +72,6 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
         Otherwise, the signature is generated using the provided signing message and private key.
 
         If `need_deploy` is True, the state initialization is included in the message.
-
-        Args:
-            signing_message (Cell): The signing message to include in the external message.
-            need_deploy (bool): Flag indicating whether deployment state initialization is needed.
-            dummy_signature (bool, optional): Flag to use a dummy signature.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the external message details
         """
         signature = bytes(64) if dummy_signature else sign_message(
             bytes(signing_message.bytes_hash()), self.options['private_key']).signature
@@ -123,28 +107,18 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
         }
 
     @classmethod
-    def store_out_msg(cls, out_msg: Cell, send_mode: int) -> Cell:
-        """
-        Creates a cell to store an out_msg with a given send mode.
-        Args:
-            out_msg (Cell): The out_msg cell to be stored.
-            send_mode (int): The mode in which the message should be sent.
-        """
-        message_cell = begin_cell().store_cell(out_msg).end_cell()
-        return begin_cell().store_uint(OPEnum.OutActionSendMsg, 32).store_uint8(send_mode).store_ref(
-            message_cell).end_cell()
-
-    def store_out_msgs(self, out_msgs: List[Cell], send_mode: int) -> Cell:
+    def store_out_msgs(cls, out_msgs: List[Cell], send_mode: int) -> Cell:
         """
         Uses a reducer function to iterate through the list of out_msgs,
         storing each out_msg in a cell and chaining them together.
-
-        Args:
-            out_msgs (List[Cell]): The list of out_msg cells to be stored.
-            send_mode (int): The mode in which the messages should be sent.
         """
+        def store_out_msg(out_msg: Cell) -> Cell:
+            message_cell = begin_cell().store_cell(out_msg).end_cell()
+            return begin_cell().store_uint(OPEnum.OutActionSendMsg, 32).store_uint8(send_mode).store_ref(
+                message_cell).end_cell()
+
         def reducer(cell: Cell, out_msg: Cell) -> Cell:
-            return begin_cell().store_ref(cell).store_cell(self.store_out_msg(out_msg, send_mode)).end_cell()
+            return begin_cell().store_ref(cell).store_cell(store_out_msg(out_msg)).end_cell()
 
         initial_cell = begin_cell().end_cell()
         cell = reduce(reducer, out_msgs, initial_cell)
@@ -152,11 +126,7 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
 
     def create_internal_transfer_body(self,  out_msgs: List[Cell], query_id: HighloadQueryId, send_mode: int) -> Cell:
         """
-        Creates the body(payload) of out_msgs for an internal transfer message .
-        Args:
-            out_msgs (List[Cell]): The list of out_msg cells to be included in the transfer.
-            query_id (QueryId): The query ID for the internal transfer.
-            send_mode (int): The mode in which the messages should be sent.
+        Creates the body(payload) of out_msgs for an internal transfer message.
         """
         actions = self.store_out_msgs(out_msgs, send_mode)
         return begin_cell().store_uint(OPEnum.InternalTransfer, 32).store_uint(query_id.query_id, 64).store_ref(
@@ -209,12 +179,6 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             send_mode (int, optional): The mode in which the message should be sent. Defaults to SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately.
             need_deploy (bool, optional): Flag indicating whether deployment state initialization is needed. Defaults to False.
             dummy_signature (bool, optional): Flag to use a dummy signature. Defaults to False.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the transfer message details.
-
-        Raises:
-            ValueError: If `create_at` is not a number >= 0.
         """
         check_timeout(self.options["timeout"])
 
@@ -247,10 +211,6 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             send_mode (int, optional): The mode in which the message should be sent.
             need_deploy (bool, optional): Flag indicating whether deployment state initialization is needed.
             dummy_signature (bool, optional): Flag to use a dummy signature. Defaults to False.
-        Returns:
-            Dict[str, Any]: A dictionary containing the multi-transfer message details.
-        Raises:
-            ValueError: If `create_at` is not a number >= 0.
         """
 
         check_timeout(self.options["timeout"])
@@ -263,13 +223,13 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
         for i, recipient in enumerate(recipients_list):
             out_msg = self.create_out_msg(
                 address=recipient['address'],
-                amount=decimal.Decimal(recipient['amount']),
+                amount=recipient['amount'],
                 payload=recipient.get('payload'))
             out_msgs.append(out_msg)
             grams += recipient['amount']
 
         body = self.create_internal_transfer_body(out_msgs, query_id, send_mode)
-        msg_to_send = self.create_out_msg(address=self.address, amount=decimal.Decimal(grams), payload=body)
+        msg_to_send = self.create_out_msg(address=self.address, amount=grams, payload=body)
         signing_message = self.create_signing_message(query_id, create_at, send_mode, msg_to_send)
         return self.create_external_message(signing_message, need_deploy, dummy_signature)
 
