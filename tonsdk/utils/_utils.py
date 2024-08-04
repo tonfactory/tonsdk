@@ -142,3 +142,12 @@ def b64str_to_hex(b64str):
 def bytes_to_b64str(bytes_arr):
     return codecs.decode(codecs.encode(
         bytes_arr, "base64"), 'utf-8').replace("\n", '')
+
+
+def check_timeout(seconds):
+    if not seconds:
+        raise ValueError("invalid timeout")
+    if seconds < 60 * 10:
+        raise ValueError("minimum timeout 10 minute")
+    if seconds > 60 * 60 * 24 * 30:
+        raise ValueError("maximum timeout 30 days")

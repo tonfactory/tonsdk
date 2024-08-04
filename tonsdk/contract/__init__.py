@@ -140,3 +140,4 @@ class Contract(ABC):
         if library:
             state_init.refs.append(library)
         return state_init
+
