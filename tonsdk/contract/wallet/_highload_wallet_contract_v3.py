@@ -1,10 +1,10 @@
 import decimal
 from functools import reduce
-
+from typing import Any, Dict, List, Optional
 from .. import Contract
 from ._wallet_contract import WalletContract, SendModeEnum
-from ...boc import Cell, begin_cell, begin_dict
-from ...utils import Address, sign_message, HighloadQueryId, check_timeout, to_nano
+from ...boc import Cell, begin_cell
+from ...utils import sign_message, HighloadQueryId, check_timeout
 
 
 class OPEnum:
@@ -14,7 +14,10 @@ class OPEnum:
 
 class HighloadWalletV3ContractBase(WalletContract):
 
-    def create_data_cell(self):
+    def create_data_cell(self) -> Cell:
+        """
+        Creates a Cell object with specific configuration.
+        """
         cell = Cell()
         cell.bits.write_bytes(self.options["public_key"])
         cell.bits.write_uint(self.options["wallet_id"], 32)
@@ -29,8 +32,18 @@ class HighloadWalletV3ContractBase(WalletContract):
             query_id: HighloadQueryId,
             created_at: int,
             send_mode: int,
-            message_to_send,
-    ):
+            message_to_send: Cell,
+    ) -> Cell:
+        """
+        Creates and initializes a Cell object for a signing message.
+        Args:
+            query_id (HighloadQueryId): The query ID for the message.
+            created_at (int): The timestamp when the message was created.
+            send_mode (int): The mode in which the message should be sent.
+            message_to_send (Cell): The message to be sent.
+        Returns:
+            Cell: The initialized Cell object for the signing message.
+        """
         cell = Cell()
         cell.bits.write_uint(self.options["wallet_id"], 32)
         cell.refs.append(message_to_send)
@@ -59,7 +72,23 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             signing_message: Cell,
             need_deploy: bool,
             dummy_signature=False
-    ):
+    ) -> Dict[str, Any]:
+        """
+        Creates an external message with the specified signing message.
+
+        If `dummy_signature` is True, a zeroed 64-byte signature is used.
+        Otherwise, the signature is generated using the provided signing message and private key.
+
+        If `need_deploy` is True, the state initialization is included in the message.
+
+        Args:
+            signing_message (Cell): The signing message to include in the external message.
+            need_deploy (bool): Flag indicating whether deployment state initialization is needed.
+            dummy_signature (bool, optional): Flag to use a dummy signature.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the external message details
+        """
         signature = bytes(64) if dummy_signature else sign_message(
             bytes(signing_message.bytes_hash()), self.options['private_key']).signature
 
@@ -93,28 +122,45 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             "data": data,
         }
 
-    def store_order(self, order, send_mode):
-        # https://github.com/ton-org/ton-core/blob/2cd5401e5607d26f151a819383a1c094bcbdbbe7/src/types/OutList.ts#L33
-        # https://github.com/ton-org/ton-core/blob/2cd5401e5607d26f151a819383a1c094bcbdbbe7/src/types/OutList.ts#L49
+    @classmethod
+    def store_order(cls, order: Cell, send_mode: int) -> Cell:
+        """
+        Creates a cell to store an order with a given send mode.
+        Args:
+            order (Cell): The order cell to be stored.
+            send_mode (int): The mode in which the message should be sent.
+        """
         message_cell = begin_cell().store_cell(order).end_cell()
         return begin_cell().store_uint(OPEnum.OutActionSendMsg, 32).store_uint8(send_mode).store_ref(
             message_cell).end_cell()
 
-    def store_orders(self, orders, send_mode):
-        # https://github.com/ton-org/ton-core/blob/2cd5401e5607d26f151a819383a1c094bcbdbbe7/src/types/OutList.ts#L100
-        def reducer(cell, order):
+    def store_orders(self, orders: List[Cell], send_mode: int) -> Cell:
+        """
+        Uses a reducer function to iterate through the list of orders,
+        storing each order in a cell and chaining them together.
+
+        Args:
+            orders (List[Cell]): The list of order cells to be stored.
+            send_mode (int): The mode in which the messages should be sent.
+        """
+        def reducer(cell: Cell, order: Cell) -> Cell:
             return begin_cell().store_ref(cell).store_cell(self.store_order(order, send_mode)).end_cell()
 
         initial_cell = begin_cell().end_cell()
         cell = reduce(reducer, orders, initial_cell)
         return cell
 
-    def create_internal_transfer_body(self, orders, query_id, send_mode):
-        # https://github.com/ipromise2324/highload-wallet-contract-v3/blob/main/wrappers/HighloadWalletV3.ts#L123
+    def create_internal_transfer_body(self,  orders: List[Cell], query_id: HighloadQueryId, send_mode: int) -> Cell:
+        """
+        Creates the body(payload) of orders for an internal transfer message .
+        Args:
+            orders (List[Cell]): The list of order cells to be included in the transfer.
+            query_id (QueryId): The query ID for the internal transfer.
+            send_mode (int): The mode in which the messages should be sent.
+        """
         actions = self.store_orders(orders, send_mode)
         return begin_cell().store_uint(OPEnum.InternalTransfer, 32).store_uint(query_id.query_id, 64).store_ref(
             actions).end_cell()
-        # https://github.com/ipromise2324/highload-wallet-contract-v3/blob/main/wrappers/HighloadWalletV3.ts#L167
 
     def create_transfer_message(
             self,
@@ -125,8 +171,26 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             payload: str = "",
             send_mode: int = SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately,
             need_deploy: bool = False,
-            dummy_signature=False
-    ):
+            dummy_signature: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Creates a single transfer message.
+        Args:
+            address (str): The recipient address of the transfer.
+            amount (int): The amount to be transferred.
+            query_id (HighloadQueryId): The query ID for the transfer.
+            create_at (int): The creation time of the message.
+            payload (str, optional): Optional payload to include in the message. Defaults to "".
+            send_mode (int, optional): The mode in which the message should be sent. Defaults to SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately.
+            need_deploy (bool, optional): Flag indicating whether deployment state initialization is needed. Defaults to False.
+            dummy_signature (bool, optional): Flag to use a dummy signature. Defaults to False.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the transfer message details.
+
+        Raises:
+            ValueError: If `create_at` is not a number >= 0.
+        """
         check_timeout(self.options["timeout"])
 
         if create_at is None or create_at < 0:
@@ -135,15 +199,35 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
         signing_message = self.create_signing_message(query_id, create_at, send_mode, message_to_send)
         return self.create_external_message(signing_message, need_deploy, dummy_signature)
 
-    def create_multi_transfer_message(
+    def create_batch_transfer_message(
             self,
-            recipients_list: list,
+            recipients_list: List[Dict],
             query_id: HighloadQueryId,
             create_at: int,
             send_mode: int = SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately,
             need_deploy: bool = False,
-            dummy_signature=False
-    ):
+            dummy_signature: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Constructs a batch-transfer message that includes multiple recipients, each with their respective
+        addresses, amounts, and optional payloads.
+        Args:
+            recipients_list (List[Dict]): The list of recipients with their details.
+                Each recipient should have the following keys:
+                - "address" (str): The recipient address.
+                - "amount" (int): The amount to be transferred.
+                - "payload" (Union[str, bytes, Cell], optional): Optional payload to include in the message.
+            query_id (HighloadQueryId): The query ID for the transfer.
+            create_at (int): The creation time of the message.
+            send_mode (int, optional): The mode in which the message should be sent.
+            need_deploy (bool, optional): Flag indicating whether deployment state initialization is needed.
+            dummy_signature (bool, optional): Flag to use a dummy signature. Defaults to False.
+        Returns:
+            Dict[str, Any]: A dictionary containing the multi-transfer message details.
+        Raises:
+            ValueError: If `create_at` is not a number >= 0.
+        """
+
         check_timeout(self.options["timeout"])
 
         if create_at is None or create_at < 0:
@@ -178,4 +262,3 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
         signing_message = self.create_signing_message(query_id, create_at, send_mode, msg_to_send)
         return self.create_external_message(signing_message, need_deploy, dummy_signature)
 
-# https://testnet.tonviewer.com/kQBpmOmiIU0pt8nWx_VKZiOM5hvVEFmJCRZIo_q0JTY7FZS_
