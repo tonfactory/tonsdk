@@ -1,6 +1,6 @@
 import decimal
 from functools import reduce
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from .. import Contract
 from ._wallet_contract import WalletContract, SendModeEnum
 from ...boc import Cell, begin_cell
@@ -123,44 +123,69 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
         }
 
     @classmethod
-    def store_order(cls, order: Cell, send_mode: int) -> Cell:
+    def store_out_msg(cls, out_msg: Cell, send_mode: int) -> Cell:
         """
-        Creates a cell to store an order with a given send mode.
+        Creates a cell to store an out_msg with a given send mode.
         Args:
-            order (Cell): The order cell to be stored.
+            out_msg (Cell): The out_msg cell to be stored.
             send_mode (int): The mode in which the message should be sent.
         """
-        message_cell = begin_cell().store_cell(order).end_cell()
+        message_cell = begin_cell().store_cell(out_msg).end_cell()
         return begin_cell().store_uint(OPEnum.OutActionSendMsg, 32).store_uint8(send_mode).store_ref(
             message_cell).end_cell()
 
-    def store_orders(self, orders: List[Cell], send_mode: int) -> Cell:
+    def store_out_msgs(self, out_msgs: List[Cell], send_mode: int) -> Cell:
         """
-        Uses a reducer function to iterate through the list of orders,
-        storing each order in a cell and chaining them together.
+        Uses a reducer function to iterate through the list of out_msgs,
+        storing each out_msg in a cell and chaining them together.
 
         Args:
-            orders (List[Cell]): The list of order cells to be stored.
+            out_msgs (List[Cell]): The list of out_msg cells to be stored.
             send_mode (int): The mode in which the messages should be sent.
         """
-        def reducer(cell: Cell, order: Cell) -> Cell:
-            return begin_cell().store_ref(cell).store_cell(self.store_order(order, send_mode)).end_cell()
+        def reducer(cell: Cell, out_msg: Cell) -> Cell:
+            return begin_cell().store_ref(cell).store_cell(self.store_out_msg(out_msg, send_mode)).end_cell()
 
         initial_cell = begin_cell().end_cell()
-        cell = reduce(reducer, orders, initial_cell)
+        cell = reduce(reducer, out_msgs, initial_cell)
         return cell
 
-    def create_internal_transfer_body(self,  orders: List[Cell], query_id: HighloadQueryId, send_mode: int) -> Cell:
+    def create_internal_transfer_body(self,  out_msgs: List[Cell], query_id: HighloadQueryId, send_mode: int) -> Cell:
         """
-        Creates the body(payload) of orders for an internal transfer message .
+        Creates the body(payload) of out_msgs for an internal transfer message .
         Args:
-            orders (List[Cell]): The list of order cells to be included in the transfer.
+            out_msgs (List[Cell]): The list of out_msg cells to be included in the transfer.
             query_id (QueryId): The query ID for the internal transfer.
             send_mode (int): The mode in which the messages should be sent.
         """
-        actions = self.store_orders(orders, send_mode)
+        actions = self.store_out_msgs(out_msgs, send_mode)
         return begin_cell().store_uint(OPEnum.InternalTransfer, 32).store_uint(query_id.query_id, 64).store_ref(
             actions).end_cell()
+
+    @classmethod
+    def create_out_msg(
+            cls,
+            address: str,
+            amount: int,
+            payload: Union[str, bytes, Cell, None] = None,
+            state_init: Union[Cell, None] = None,
+    ) -> Cell:
+        payload_cell = Cell()
+        if payload:
+            if isinstance(payload, Cell):
+                payload_cell = payload
+            elif isinstance(payload, str):
+                if len(payload) > 0:
+                    payload_cell.bits.write_uint(0, 32)
+                    payload_cell.bits.write_string(payload)
+            else:
+                payload_cell.bits.write_bytes(payload)
+
+        order_header = cls.create_internal_message_header(address, amount)
+        order = cls.create_common_msg_info(
+            order_header, state_init, payload_cell
+        )
+        return order
 
     def create_transfer_message(
             self,
@@ -234,31 +259,17 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             raise ValueError("create_at must be number >= 0")
 
         grams = 0
-        orders = []
+        out_msgs = []
         for i, recipient in enumerate(recipients_list):
-            payload = recipient.get('payload')
-            payload_cell = Cell()
-            if payload:
-                if isinstance(payload, str):
-                    if len(payload) > 0:
-                        payload_cell.bits.write_uint(0, 32)
-                        payload_cell.bits.write_string(payload)
-                elif isinstance(payload, Cell):
-                    payload_cell = payload
-                else:
-                    payload_cell.bits.write_bytes(payload)
-
-            order_header = Contract.create_internal_message_header(
-                recipient['address'], decimal.Decimal(recipient['amount'])
-            )
-
-            order = Contract.create_common_msg_info(order_header, None, payload_cell)
-            orders.append(order)
+            out_msg = self.create_out_msg(
+                address=recipient['address'],
+                amount=decimal.Decimal(recipient['amount']),
+                payload=recipient.get('payload'))
+            out_msgs.append(out_msg)
             grams += recipient['amount']
 
-        body = self.create_internal_transfer_body(orders, query_id, send_mode)
-        order_header = self.create_internal_message_header(self.address, decimal.Decimal(grams))
-        msg_to_send = Contract.create_common_msg_info(order_header, None, body)
+        body = self.create_internal_transfer_body(out_msgs, query_id, send_mode)
+        msg_to_send = self.create_out_msg(address=self.address, amount=decimal.Decimal(grams), payload=body)
         signing_message = self.create_signing_message(query_id, create_at, send_mode, msg_to_send)
         return self.create_external_message(signing_message, need_deploy, dummy_signature)
 
