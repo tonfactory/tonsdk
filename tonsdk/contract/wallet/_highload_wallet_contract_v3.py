@@ -1,4 +1,5 @@
 import decimal
+from functools import reduce
 
 from .. import Contract
 from ._wallet_contract import WalletContract, SendModeEnum
@@ -8,7 +9,7 @@ from ...utils import Address, sign_message, HighloadQueryId, check_timeout, to_n
 
 class OPEnum:
     InternalTransfer = 0xae42e5a4
-
+    OutActionSendMsg = 0x0ec3c86d
 
 
 class HighloadWalletV3Contract(WalletContract):
@@ -82,7 +83,6 @@ class HighloadWalletV3Contract(WalletContract):
             self,
             signing_message: Cell,
             need_deploy: bool,
-            payload
     ):
         signature = sign_message(bytes(signing_message.bytes_hash()), self.options['private_key']).signature
 
@@ -100,7 +100,7 @@ class HighloadWalletV3Contract(WalletContract):
             code = deploy["code"]
             data = deploy["data"]
 
-        header = self.create_external_message_header(self.address, payload)
+        header = self.create_external_message_header(self.address)
         result_message = Contract.create_common_msg_info(
             header, state_init, body
         )
@@ -116,73 +116,78 @@ class HighloadWalletV3Contract(WalletContract):
             "data": data,
         }
 
+
+    def store_out_action(self, common_msg_info, send_mode):
+        # https://github.com/ton-org/ton-core/blob/2cd5401e5607d26f151a819383a1c094bcbdbbe7/src/types/OutList.ts#L33
+        # https://github.com/ton-org/ton-core/blob/2cd5401e5607d26f151a819383a1c094bcbdbbe7/src/types/OutList.ts#L49
+        # out_message = result of create_internal_message_header and create_common_msg_info
+        out_message_cell = begin_cell().store_cell(common_msg_info).end_cell()
+        return begin_cell().store_uint(OPEnum.OutActionSendMsg, 32).store_uint8(send_mode).store_ref(out_message_cell).end_cell()
+
+    def store_out_list(self, common_msgs, send_mode):
+        # https://github.com/ton-org/ton-core/blob/2cd5401e5607d26f151a819383a1c094bcbdbbe7/src/types/OutList.ts#L100
+        def reducer(cell, common_msg):
+            return begin_cell().store_ref(cell).store_cell(self.store_out_action(common_msg, send_mode)).end_cell()
+
+        initial_cell = begin_cell().end_cell()
+        cell = reduce(reducer, common_msgs, initial_cell)
+        # todo: here you may need to implement and return begin_parse of final_cell
+        return cell
+
+    def create_internal_transfer_body(self, common_msgs, query_id, send_mode):
+        # https://github.com/ipromise2324/highload-wallet-contract-v3/blob/main/wrappers/HighloadWalletV3.ts#L123
+        actions = self.store_out_list(common_msgs, send_mode)
+        return begin_cell().store_uint(OPEnum.InternalTransfer, 32).store_uint(query_id.query_id, 64).store_ref(actions).end_cell()
+        #https://github.com/ipromise2324/highload-wallet-contract-v3/blob/main/wrappers/HighloadWalletV3.ts#L167
+
+
     def create_multi_transfer_message(
             self,
             recipients_list: list,
             query_id: HighloadQueryId,
             create_at: int,
-            #     todo change send mode default here:
             send_mode: int = SendModeEnum.ignore_errors | SendModeEnum.pay_gas_separately,
             need_deploy: bool = False
     ):
-        amount = 0
+
         if create_at is None or create_at < 0:
             raise ValueError("create_at must be number >= 0")
 
-        recipients = begin_dict(16)
+        grams = 0
+        recipients = []
         for i, recipient in enumerate(recipients_list):
-            amount += recipient['amount']
-            message_to_send = self.create_internal_message_h(
-                dest=recipient['address'],
-                grams=recipient['amount'],
-                payload=recipient["payload"])
 
-            # recipients.store_cell(
-            #     i, begin_cell().store_uint8(3).store_cell(message_to_send).end_cell()
-            # )
+            payload_cell = Cell()
+            if recipient.get('payload'):
+                if type(recipient['payload']) == str:
+                    if len(recipient['payload']) > 0:
+                        payload_cell.bits.write_uint(0, 32)
+                        payload_cell.bits.write_string(recipient['payload'])
+                elif hasattr(recipient['payload'], 'refs'):
+                    payload_cell = recipient['payload']
+                else:
+                    payload_cell.bits.write_bytes(recipient['payload'])
 
-            value = Cell()
-            value.bits.write_uint8(send_mode)
-            value.write_cell(message_to_send)
-            recipients.store_cell(i, value)
-        payload = begin_cell().store_uint(OPEnum.InternalTransfer ,32).store_uint(query_id.query_id ,64).store_ref(recipients.end_cell()).end_cell()
-        # out = self.create_internal_message_h(dest=self.address ,grams=to_nano(0, "nanoton"), payload=payload)
-        signing_message = self.create_signing_message(query_id, create_at, send_mode, out)
+            order_header = Contract.create_internal_message_header(
+                Address(recipient['address']), decimal.Decimal(recipient['amount'])
+            )
+
+            order = Contract.create_common_msg_info(
+                order_header, None, payload_cell
+            )
+            recipients.append(order)
+            grams += recipient['amount']
+
+
+        body = self.create_internal_transfer_body(recipients, query_id, send_mode)
+        order_header = self.create_internal_message_header(dest=self.address, grams=grams)
+        out = Contract.create_common_msg_info(
+                header=order_header, state_init=recipient.get('state_init'), body =body
+            )
+        msg_to_send = begin_cell().store_cell(out).end_cell()
+        signing_message = self.create_signing_message(query_id, create_at, send_mode, msg_to_send)
         return self.create_external_message(
-            signing_message, need_deploy, payload
+            signing_message, need_deploy
         )
 
-    @classmethod
-    def create_internal_message_h(cls, dest, grams=0, payload=None):
-        src = None
-        bounce = False
-        bounced = False
-        ihr_disabled = True
-        payload_cell = Cell()
-        if payload:
-            if isinstance(payload, Cell):
-                payload_cell = payload
-            elif isinstance(payload, str):
-                if len(payload) > 0:
-                    payload_cell.bits.write_uint(0, 32)
-                    payload_cell.bits.write_string(payload)
-            else:
-                payload_cell.bits.write_bytes(payload)
-
-        message = Cell()
-        message.bits.write_bit(0)
-        message.bits.write_bit(ihr_disabled)
-        if bounce is not None:
-            message.bits.write_bit(bounce)
-        else:
-            message.bits.write_bit(Address(dest).is_bounceable)
-        message.bits.write_bit(bounced)
-        message.bits.write_address(Address(src) if src else None)
-        message.bits.write_address(Address(dest))
-        message.bits.write_grams(grams)
-        message.bits.write_uint(0, 1 + 4 + 4 + 64 + 32)
-        message.bits.write_uint(0, 1)
-        message.bits.write_uint(1, 1)
-        message.refs.append(payload_cell)
-        return message
-
+# https://testnet.tonviewer.com/kQBpmOmiIU0pt8nWx_VKZiOM5hvVEFmJCRZIo_q0JTY7FZS_
