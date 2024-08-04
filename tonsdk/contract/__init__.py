@@ -1,5 +1,4 @@
 from abc import ABC
-from typing import Union
 
 from ..boc import Cell
 from ..utils import Address
