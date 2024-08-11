@@ -56,6 +56,8 @@ class HighloadWalletV3Contract(HighloadWalletV3ContractBase):
             raise ValueError("only basechain (wc = 0) supported")
         kwargs["wc"] = 0
         super().__init__(**kwargs)
+        if not self.options.get("timeout", None):
+            self.options["timeout"] = 60 * 11
         if not self.options.get("wallet_id", None):
             self.options["wallet_id"] = 0x10AD
 
