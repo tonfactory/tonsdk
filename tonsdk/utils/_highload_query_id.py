@@ -15,9 +15,9 @@ class HighloadQueryId:
         self._shift = 0
         self._bit_number = 0
 
-    @staticmethod
+    @classmethod
     def from_shift_and_bit_number(
-        shift: int, bit_number: int
+        cls, shift: int, bit_number: int
     ) -> "HighloadQueryId":
         """
         Creates a new HighloadQueryId object with specified shift and bit number
@@ -32,7 +32,7 @@ class HighloadQueryId:
         if not (0 <= bit_number <= MAX_BIT_NUMBER):
             raise ValueError("invalid bitnumber")
 
-        q = HighloadQueryId()
+        q = cls()
         q._shift = shift
         q._bit_number = bit_number
         return q
@@ -57,7 +57,7 @@ class HighloadQueryId:
             if new_shift > MAX_SHIFT:
                 raise ValueError("Overload")
 
-        return HighloadQueryId.from_shift_and_bit_number(
+        return self.from_shift_and_bit_number(
             new_shift, new_bit_number
         )
 
@@ -101,8 +101,8 @@ class HighloadQueryId:
         """
         return (self._shift << BIT_NUMBER_SIZE) + self._bit_number
 
-    @staticmethod
-    def from_query_id(query_id: int) -> "HighloadQueryId":
+    @classmethod
+    def from_query_id(cls, query_id: int) -> "HighloadQueryId":
         """
         Creates a new HighloadQueryId object from a given query ID
 
@@ -111,10 +111,10 @@ class HighloadQueryId:
         """
         shift = query_id >> BIT_NUMBER_SIZE
         bit_number = query_id & 1023
-        return HighloadQueryId.from_shift_and_bit_number(shift, bit_number)
+        return cls.from_shift_and_bit_number(shift, bit_number)
 
-    @staticmethod
-    def from_seqno(i: int) -> "HighloadQueryId":
+    @classmethod
+    def from_seqno(cls, i: int) -> "HighloadQueryId":
         """
         Creates a HighloadQueryId from a sequence number
 
@@ -123,7 +123,7 @@ class HighloadQueryId:
         """
         shift = i // 1023
         bit_number = i % 1023
-        return HighloadQueryId.from_shift_and_bit_number(shift, bit_number)
+        return cls.from_shift_and_bit_number(shift, bit_number)
 
     def to_seqno(self) -> int:
         """
