@@ -41,7 +41,9 @@ class Contract(ABC):
         return self.options["code"]
 
     def create_data_cell(self):
-        return Cell()
+        if "data" not in self.options or self.options["data"] is None:
+            raise Exception("Contract: options.data is not defined")
+        return self.options["data"]
 
     def create_init_external_message(self):
         create_state_init = self.create_state_init()
