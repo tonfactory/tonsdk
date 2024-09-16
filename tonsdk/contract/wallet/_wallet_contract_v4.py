@@ -22,7 +22,7 @@ class WalletV4ContractBase(WalletContract):
                 message.bits.write_bit(1)
         else:
             timestamp = int(time.time())  # get timestamp in seconds
-            message.bits.write_uint(timestamp + 5 * 60, 32)
+            message.bits.write_uint(timestamp + 60, 32)
 
         message.bits.write_uint(seqno, 32)
 

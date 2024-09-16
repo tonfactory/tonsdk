@@ -81,7 +81,6 @@ class WalletContract(Contract):
             data = deploy["data"]
 
         self_address = self.address
-
         header = Contract.create_external_message_header(self_address)
         result_message = Contract.create_common_msg_info(
             header, state_init, body)
