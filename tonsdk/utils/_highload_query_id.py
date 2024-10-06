@@ -47,7 +47,7 @@ class HighloadQueryId:
         new_bit_number = self._bit_number + 1
         new_shift = self._shift
 
-        if new_shift == MAX_SHIFT and new_bit_number > (MAX_BIT_NUMBER - 1):
+        if new_shift == MAX_SHIFT and new_bit_number >= (MAX_BIT_NUMBER - 1):
             # we left one queryId for emergency withdraw
             raise ValueError("Overload")
 
