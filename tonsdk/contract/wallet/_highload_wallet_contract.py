@@ -32,7 +32,7 @@ class HighloadWalletV2Contract(HighloadWalletContractBase):
 
     def create_transfer_message(self, recipients_list: list, query_id: int, timeout=60, dummy_signature=False):
         if query_id < int(time.time() + timeout) << 32:
-            query_id = int(time.time() + timeout) << 32 + query_id
+            query_id = (int(time.time() + timeout) << 32) + query_id
 
         signing_message = self.create_signing_message(query_id)
         recipients = begin_dict(16)
